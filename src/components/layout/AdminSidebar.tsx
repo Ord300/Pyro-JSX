@@ -29,7 +29,7 @@ const menuGroups = [
       { name: 'Utilisateurs', path: '/admin/users', icon: Users },
       { name: 'Abonnés', path: '/admin/subscribers', icon: UserCheck },
       { name: 'Demandes', path: '/admin/requests', icon: FileText },
-      { name: 'Abonnements', path: '/admin/subscriptions', icon: CreditCard },
+          // Abonnements module removed per request
     ]
   },
   {
@@ -44,8 +44,6 @@ const menuGroups = [
   {
     title: 'Transactions',
     items: [
-      { name: 'Paiements', path: '/admin/payments', icon: CreditCard },
-      { name: 'Réservations', path: '/admin/reservations', icon: Calendar },
       { name: 'Reçus', path: '/admin/receipts', icon: FileText },
     ]
   },

@@ -9,11 +9,8 @@ const navLinks = [
   { name: 'Accueil', path: '/' },
   { name: 'À propos', path: '/about' },
   { name: 'Activités', path: '/activities' },
-  { name: 'Entraîneurs', path: '/trainers' },
-  { name: 'Lieux', path: '/places' },
-  { name: 'Tarifs', path: '/pricing' },
+  { name: 'Vérification', path: '/verification' },
   { name: 'Nos équipements', path: '/equipements' },
-  { name: 'Contact', path: '/contact' },
 ];
 
 export function PublicNavbar() {
@@ -52,7 +49,7 @@ export function PublicNavbar() {
             <Button variant="ghost">Connexion</Button>
           </Link>
           <Link to="/register">
-            <Button>S'inscrire</Button>
+            <Button className="ml-2 bg-primary-600 text-white hover:bg-primary-700">S'abonner maintenant</Button>
           </Link>
         </div>
 

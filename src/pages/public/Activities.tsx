@@ -51,7 +51,7 @@ export function Activities() {
                     <p className="text-xs text-slate-400">À partir de</p>
                     <p className="text-lg font-bold text-primary-600 dark:text-primary-400">{activity.priceWeek} USD<span className="text-xs font-normal text-slate-400">/sem.</span></p>
                   </div>
-                  <Link to="/pricing"><Button size="sm">S'abonner</Button></Link>
+                  <Link to="/register"><Button size="sm">S'abonner</Button></Link>
                 </div>
               </CardContent>
             </Card>

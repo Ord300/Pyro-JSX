@@ -21,7 +21,7 @@ export function Login() {
     const res = await auth.login(form.email.trim(), form.password);
     setLoading(false);
     if (!res.ok) { setError(res.message || 'Erreur'); return; }
-    const user = auth.user;
+    const user = (res as any).user ?? auth.user; // use returned user to avoid stale state
     if (user?.role === 'Gestionnaire') navigate('/admin');
     else navigate(user?.mustChangePassword ? '/change-password' : '/dashboard');
   };

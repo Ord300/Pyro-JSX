@@ -15,6 +15,11 @@ export function Footer() {
             <p className="text-sm text-slate-500 dark:text-slate-400">
               Votre plateforme complète pour gérer vos activités sportives et abonnements en toute simplicité.
             </p>
+            <div className="mt-4 text-sm text-slate-600 dark:text-slate-400">
+              <div>📞 +33 1 23 45 67 89</div>
+              <div>✉️ contact@centre-sportif.example</div>
+              <div>🏢 12 Rue du Sport, 75000 Paris</div>
+            </div>
           </div>
           
           <div>
@@ -22,7 +27,7 @@ export function Footer() {
             <ul className="space-y-3 text-sm text-slate-500 dark:text-slate-400">
               <li><Link to="/about" className="hover:text-primary-600 dark:hover:text-primary-400 transition-colors">À propos</Link></li>
               <li><Link to="/activities" className="hover:text-primary-600 dark:hover:text-primary-400 transition-colors">Activités</Link></li>
-              <li><Link to="/pricing" className="hover:text-primary-600 dark:hover:text-primary-400 transition-colors">Tarifs</Link></li>
+              
               <li><Link to="/contact" className="hover:text-primary-600 dark:hover:text-primary-400 transition-colors">Contact</Link></li>
             </ul>
           </div>

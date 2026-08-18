@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   Users, CreditCard, Activity, Dumbbell,
   Calendar, DollarSign, Clock, AlertCircle
@@ -8,8 +8,7 @@ import { RevenueChart, SubscriptionsChart, ReservationsChart, ActivityDonutChart
 import { Badge } from '../../components/ui/Badge';
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '../../components/ui/Table';
 import { Button } from '../../components/ui/Button';
-import { recentPayments, recentReservations, pendingRequests } from '../../data/adminData';
-import { mockStats } from '../../data/mockData';
+import { paymentsDB, reservationsDB, subscriptionRequestsDB, subscriptionsDB, usersDB, activitiesDB, trainersDB } from '../../services/dbService';
 import { Link } from 'react-router-dom';
 
 const statusBadge = (status: string) => {
@@ -24,6 +23,61 @@ const statusBadge = (status: string) => {
 };
 
 export function AdminDashboard() {
+  const [stats, setStats] = useState<any>({
+    totalSubscribers: 0,
+    activeSubscriptions: 0,
+    expiredSubscriptions: 0,
+    pendingRequests: 0,
+    totalActivities: 0,
+    totalTrainers: 0,
+    totalReservations: 0,
+    totalRevenue: 0,
+  });
+
+  const [recentPayments, setRecentPayments] = useState<any[]>([]);
+  const [recentReservations, setRecentReservations] = useState<any[]>([]);
+  const [pendingRequests, setPendingRequests] = useState<any[]>([]);
+  const [allPayments, setAllPayments] = useState<any[]>([]);
+  const [allSubscriptions, setAllSubscriptions] = useState<any[]>([]);
+  const [allReservations, setAllReservations] = useState<any[]>([]);
+  const [allActivities, setAllActivities] = useState<any[]>([]);
+
+  const compute = () => {
+    const users = usersDB.getAll<any>();
+    const subs = subscriptionsDB.getAll<any>();
+    const reqs = subscriptionRequestsDB.getAll<any>();
+    const acts = activitiesDB.getAll<any>();
+    const trainers = trainersDB.getAll<any>();
+    const reservations = reservationsDB.getAll<any>();
+    const payments = paymentsDB.getAll<any>();
+
+    const totalSubscribers = users.length;
+    const activeSubscriptions = subs.filter((s:any) => s.status === 'active').length;
+    const expiredSubscriptions = subs.filter((s:any) => s.status === 'expired').length;
+    const totalActivities = acts.length;
+    const totalTrainers = trainers.length;
+    const totalReservations = reservations.length;
+    const totalRevenue = payments.reduce((sum:any, p:any) => sum + (p.total ?? p.amount ?? 0), 0);
+
+    setStats({ totalSubscribers, activeSubscriptions, expiredSubscriptions, pendingRequests: reqs.length, totalActivities, totalTrainers, totalReservations, totalRevenue });
+    setAllPayments(payments);
+    setRecentPayments(payments.slice(-5).reverse());
+    // sort reservations by date if available
+    setAllReservations(reservations);
+    const sortedRes = [...reservations].sort((a,b) => (a.date || '').localeCompare(b.date || '')).slice(0,5);
+    setRecentReservations(sortedRes);
+    setAllSubscriptions(subs);
+    setAllActivities(acts);
+    setPendingRequests(reqs.filter((r:any) => r.status === 'En attente').slice(0,5));
+  };
+
+  useEffect(() => {
+    compute();
+    const onChange = () => compute();
+    window.addEventListener('db-change', onChange as any);
+    return () => window.removeEventListener('db-change', onChange as any);
+  }, []);
+
   return (
     <div className="space-y-8">
       {/* Header */}
@@ -36,32 +90,32 @@ export function AdminDashboard() {
 
       {/* KPI Cards — Ligne 1 */}
       <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-5">
-        <KPICard title="Total abonnés" value={mockStats.totalSubscribers.toLocaleString()} icon={Users} change={12.5} color="blue" />
-        <KPICard title="Abonnements actifs" value={mockStats.activeSubscriptions.toLocaleString()} icon={CreditCard} change={8.2} color="green" />
-        <KPICard title="Abonnements expirés" value={mockStats.expiredSubscriptions.toLocaleString()} icon={AlertCircle} change={-3.1} color="red" />
-        <KPICard title="Demandes en attente" value={mockStats.pendingRequests} icon={Clock} change={5.0} color="amber" />
+        <KPICard title="Total abonnés" value={String(stats.totalSubscribers)} icon={Users} change={12.5} color="blue" />
+        <KPICard title="Abonnements actifs" value={String(stats.activeSubscriptions)} icon={CreditCard} change={8.2} color="green" />
+        <KPICard title="Abonnements expirés" value={String(stats.expiredSubscriptions)} icon={AlertCircle} change={-3.1} color="red" />
+        <KPICard title="Demandes en attente" value={String(stats.pendingRequests)} icon={Clock} change={5.0} color="amber" />
       </div>
 
       {/* KPI Cards — Ligne 2 */}
       <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-5">
-        <KPICard title="Activités" value={mockStats.totalActivities} icon={Activity} color="cyan" />
-        <KPICard title="Entraîneurs" value={mockStats.totalTrainers} icon={Dumbbell} color="purple" />
-        <KPICard title="Réservations ce mois" value={mockStats.totalReservations} icon={Calendar} change={18.7} color="blue" />
-        <KPICard title="Revenus (USD)" value={`$${mockStats.totalRevenue.toLocaleString()}`} icon={DollarSign} change={22.4} color="green" />
+        <KPICard title="Activités" value={String(stats.totalActivities)} icon={Activity} color="cyan" />
+        <KPICard title="Entraîneurs" value={String(stats.totalTrainers)} icon={Dumbbell} color="purple" />
+        <KPICard title="Réservations ce mois" value={String(stats.totalReservations)} icon={Calendar} change={18.7} color="blue" />
+        <KPICard title="Revenus (USD)" value={`$${String(stats.totalRevenue)}`} icon={DollarSign} change={22.4} color="green" />
       </div>
 
       {/* Graphiques — Ligne 1 */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <RevenueChart />
-        <SubscriptionsChart />
+        <RevenueChart payments={allPayments} />
+        <SubscriptionsChart subscriptions={allSubscriptions} />
       </div>
 
       {/* Graphiques — Ligne 2 */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="lg:col-span-2">
-          <ReservationsChart />
+          <ReservationsChart reservations={allReservations} />
         </div>
-        <ActivityDonutChart />
+        <ActivityDonutChart subscriptions={allSubscriptions} />
       </div>
 
       {/* Demandes en attente */}
@@ -117,23 +171,27 @@ export function AdminDashboard() {
             <Link to="/admin/payments"><Button variant="ghost" size="sm">Voir tout →</Button></Link>
           </div>
           <div className="divide-y divide-slate-100 dark:divide-slate-800">
-            {recentPayments.map((p) => (
-              <div key={p.id} className="flex items-center justify-between px-6 py-3">
-                <div className="flex items-center gap-3">
-                  <div className="h-9 w-9 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-xs font-bold text-slate-600 dark:text-slate-300">
-                    {p.name.split(' ').map(n => n[0]).join('')}
+            {recentPayments.map((p) => {
+              const displayName = String(p.name || p.userName || p.email || 'Utilisateur');
+              const initials = displayName.split(' ').map((n) => n[0] || '').join('').slice(0,3).toUpperCase();
+              return (
+                <div key={p.id} className="flex items-center justify-between px-6 py-3">
+                  <div className="flex items-center gap-3">
+                    <div className="h-9 w-9 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-xs font-bold text-slate-600 dark:text-slate-300">
+                      {initials}
+                    </div>
+                    <div>
+                      <p className="text-sm font-medium text-slate-900 dark:text-white">{displayName}</p>
+                      <p className="text-xs text-slate-400">{p.activity || '—'} · {p.method || '—'}</p>
+                    </div>
                   </div>
-                  <div>
-                    <p className="text-sm font-medium text-slate-900 dark:text-white">{p.name}</p>
-                    <p className="text-xs text-slate-400">{p.activity} · {p.method}</p>
+                  <div className="text-right">
+                    <p className="text-sm font-bold text-slate-900 dark:text-white">${p.amount ?? p.total ?? 0}</p>
+                    {statusBadge(p.status)}
                   </div>
                 </div>
-                <div className="text-right">
-                  <p className="text-sm font-bold text-slate-900 dark:text-white">${p.amount}</p>
-                  {statusBadge(p.status)}
-                </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </div>
 
@@ -141,18 +199,18 @@ export function AdminDashboard() {
         <div className="rounded-xl border border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-900 shadow-sm">
           <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 px-6 py-4">
             <h3 className="font-semibold text-slate-900 dark:text-white">Prochaines réservations</h3>
-            <Link to="/admin/reservations"><Button variant="ghost" size="sm">Voir tout →</Button></Link>
+            <Button variant="ghost" size="sm" disabled>Voir tout →</Button>
           </div>
           <div className="divide-y divide-slate-100 dark:divide-slate-800">
             {recentReservations.map((r) => (
               <div key={r.id} className="flex items-center justify-between px-6 py-3">
                 <div className="flex items-center gap-3">
                   <div className="h-9 w-9 rounded-full bg-primary-50 dark:bg-primary-900/20 flex items-center justify-center text-xs font-bold text-primary-600 dark:text-primary-400">
-                    {r.member.split(' ').map(n => n[0]).join('')}
+                    {String((r.member || r.userName || 'Membre')).split(' ').map(n => n[0] || '').join('').slice(0,3)}
                   </div>
                   <div>
-                    <p className="text-sm font-medium text-slate-900 dark:text-white">{r.member}</p>
-                    <p className="text-xs text-slate-400">{r.activity} · {r.place}</p>
+                    <p className="text-sm font-medium text-slate-900 dark:text-white">{r.member || r.userName || 'Membre'}</p>
+                    <p className="text-xs text-slate-400">{r.activity || '—'} · {r.place || '—'}</p>
                   </div>
                 </div>
                 <div className="text-right">

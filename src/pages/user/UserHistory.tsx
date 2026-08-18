@@ -4,7 +4,7 @@ import { Badge } from '../../components/ui/Badge';
 import { cn } from '../../utils/cn';
 import { mockSubscriptions } from '../../data/subscriptionData';
 import { mockReservations } from '../../data/reservationData';
-import { mockPayments } from '../../data/paymentData';
+import { paymentsDB, usersDB } from '../../services/dbService';
 import { History, Search } from 'lucide-react';
 
 type HistoryType = 'all' | 'subscriptions' | 'reservations' | 'payments';
@@ -43,9 +43,15 @@ export function UserHistory() {
     return true;
   });
 
-  const filteredPayments = mockPayments.filter((p) => {
+  // Payments for current user
+  const currentEmail = localStorage.getItem('current_user_email') || localStorage.getItem('current_subscriber_email');
+  const currentUser = currentEmail ? usersDB.getAll<any>().find(u => u.email?.toLowerCase() === currentEmail.toLowerCase()) : null;
+  const allPayments = paymentsDB.getAll<any>();
+  const filteredPayments = allPayments.filter((p) => {
     if (filter !== 'all' && filter !== 'payments') return false;
-    if (search && !p.description.toLowerCase().includes(search.toLowerCase()) && !p.reference.toLowerCase().includes(search.toLowerCase())) return false;
+    const matchesUser = currentUser ? (p.userId === currentUser.id || String(p.email || '').toLowerCase() === currentEmail?.toLowerCase() || String(p.userName || '').toLowerCase().includes((currentUser.name || '').toLowerCase())) : false;
+    if (!matchesUser) return false;
+    if (search && !String(p.description || '').toLowerCase().includes(search.toLowerCase()) && !String(p.reference || '').toLowerCase().includes(search.toLowerCase())) return false;
     return true;
   });
 

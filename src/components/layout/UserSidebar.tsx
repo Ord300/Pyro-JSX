@@ -15,8 +15,7 @@ import { cn } from '../../utils/cn';
 const menuItems = [
   { name: 'Dashboard', path: '/dashboard', icon: LayoutDashboard },
   { name: 'Mon abonnement', path: '/dashboard/subscription', icon: CreditCard },
-  { name: 'Réservations', path: '/dashboard/reservations', icon: Calendar },
-  { name: 'Paiements', path: '/dashboard/payments', icon: CreditCard },
+  
   { name: 'Reçus', path: '/dashboard/receipts', icon: FileText },
   { name: 'Historique', path: '/dashboard/history', icon: History },
   { name: 'Notifications', path: '/dashboard/notifications', icon: Bell },

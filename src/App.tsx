@@ -10,15 +10,15 @@ import { UserLayout } from './layouts/UserLayout';
 
 // Public Pages (chargées immédiatement - page d'accueil critique)
 import { Home } from './pages/public/Home';
+import { About } from './pages/public/About';
 import { Login } from './pages/public/Login';
 import { Register } from './pages/public/Register';
 
 // Lazy loading pour les pages non critiques
 const Activities = lazy(() => import('./pages/public/Activities').then(m => ({ default: m.Activities })));
-const Trainers = lazy(() => import('./pages/public/Trainers').then(m => ({ default: m.Trainers })));
+// Trainers and Pricing pages removed per request
 const Places = lazy(() => import('./pages/public/Places').then(m => ({ default: m.Places })));
-const Pricing = lazy(() => import('./pages/public/Pricing').then(m => ({ default: m.Pricing })));
-const Contact = lazy(() => import('./pages/public/Contact').then(m => ({ default: m.Contact })));
+// Contact page removed
 const Equipements = lazy(() => import('./pages/public/NosEquipements.tsx').then(m => ({ default: m.default })));
 const Verification = lazy(() => import('./pages/public/Verification').then(m => ({ default: m.Verification })));
 const ChangePassword = lazy(() => import('./pages/public/ChangePassword').then(m => ({ default: m.ChangePassword })));
@@ -32,18 +32,16 @@ const AdminActivities = lazy(() => import('./pages/admin/AdminActivities').then(
 const AdminTrainers = lazy(() => import('./pages/admin/AdminTrainers').then(m => ({ default: m.AdminTrainers })));
 const AdminPlaces = lazy(() => import('./pages/admin/AdminPlaces').then(m => ({ default: m.AdminPlaces })));
 const AdminReports = lazy(() => import('./pages/admin/AdminReports').then(m => ({ default: m.AdminReports })));
-const AdminSubscriptions = lazy(() => import('./pages/admin/AdminSubscriptions').then(m => ({ default: m.AdminSubscriptions })));
-const AdminEquipment = lazy(() => import('./pages/admin/AdminEquipment').then(m => ({ default: m.AdminEquipment })));
-const AdminPayments = lazy(() => import('./pages/admin/AdminPayments').then(m => ({ default: m.AdminPayments })));
-const AdminReceipts = lazy(() => import('./pages/admin/AdminReceipts').then(m => ({ default: m.AdminReceipts })));
+const AdminEquipment = lazy(() => import('./pages/admin/AdminEquipment').then(m => ({ default: m.default })));
+const AdminSettings = lazy(() => import('./pages/admin/AdminSettings').then(m => ({ default: m.AdminSettings })));
+// Admin payments module removed
+const AdminReceipts = lazy(() => import('./pages/admin/AdminReceiptsNew').then(m => ({ default: m.default })));
 const AdminNotifications = lazy(() => import('./pages/admin/AdminNotifications').then(m => ({ default: m.AdminNotifications })));
 const AdminMessages = lazy(() => import('./pages/admin/AdminMessages').then(m => ({ default: m.AdminMessages })));
 
 // User Pages (lazy)
 const UserDashboard = lazy(() => import('./pages/user/UserDashboard').then(m => ({ default: m.UserDashboard })));
 const UserSubscription = lazy(() => import('./pages/user/UserSubscription').then(m => ({ default: m.UserSubscription })));
-const UserReservations = lazy(() => import('./pages/user/UserReservations').then(m => ({ default: m.UserReservations })));
-const UserPayments = lazy(() => import('./pages/user/UserPayments').then(m => ({ default: m.UserPayments })));
 const UserReceipts = lazy(() => import('./pages/user/UserReceipts').then(m => ({ default: m.UserReceipts })));
 const UserHistory = lazy(() => import('./pages/user/UserHistory').then(m => ({ default: m.UserHistory })));
 const UserNotifications = lazy(() => import('./pages/user/UserNotifications').then(m => ({ default: m.UserNotifications })));
@@ -90,13 +88,11 @@ function App() {
               {/* Public Routes */}
               <Route element={<PublicLayout />}>
                 <Route path="/" element={<Home />} />
-                <Route path="/about" element={<ComingSoon title="À propos" />} />
+                <Route path="/about" element={<About />} />
                 <Route path="/activities" element={<Activities />} />
-                <Route path="/trainers" element={<Trainers />} />
                 <Route path="/places" element={<Places />} />
                 <Route path="/equipements" element={<Equipements />} />
-                <Route path="/pricing" element={<Pricing />} />
-                <Route path="/contact" element={<Contact />} />
+                {/* contact page removed */}
                 <Route path="/verification" element={<Verification />} />
               </Route>
 
@@ -112,26 +108,22 @@ function App() {
                 <Route path="users" element={<AdminUsers />} />
                 <Route path="subscribers" element={<AdminSubscribers />} />
                 <Route path="requests" element={<AdminRequests />} />
-                <Route path="subscriptions" element={<AdminSubscriptions />} />
                 <Route path="activities" element={<AdminActivities />} />
                 <Route path="trainers" element={<AdminTrainers />} />
                 <Route path="places" element={<AdminPlaces />} />
                 <Route path="equipment" element={<AdminEquipment />} />
-                <Route path="payments" element={<AdminPayments />} />
-                <Route path="reservations" element={<ComingSoon title="Gestion Réservations" />} />
+                {/* Payments & Reservations modules removed */}
                 <Route path="receipts" element={<AdminReceipts />} />
                 <Route path="notifications" element={<AdminNotifications />} />
                 <Route path="messages" element={<AdminMessages />} />
                 <Route path="reports" element={<AdminReports />} />
-                <Route path="settings" element={<ComingSoon title="Paramètres" />} />
+                <Route path="settings" element={<AdminSettings />} />
               </Route>
 
               {/* User Dashboard Routes */}
               <Route path="/dashboard" element={<UserLayout />}>
                 <Route index element={<UserDashboard />} />
                 <Route path="subscription" element={<UserSubscription />} />
-                <Route path="reservations" element={<UserReservations />} />
-                <Route path="payments" element={<UserPayments />} />
                 <Route path="receipts" element={<UserReceipts />} />
                 <Route path="history" element={<UserHistory />} />
                 <Route path="notifications" element={<UserNotifications />} />

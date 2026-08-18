@@ -25,7 +25,9 @@ const initialRequests: Request[] = [
 const statusVariant = (s: ReqStatus) => s === 'Confirmée' ? 'success' : s === 'Refusée' ? 'danger' : 'warning';
 
 export function AdminRequests() {
-  const [requests, setRequests] = useState<Request[]>(() => subscriptionFlow.requests().filter(request => request.subject === "Demande d'abonnement").map(request => ({ id: String(request.id), name: request.name, email: request.email, phone: request.phone, subject: request.subject, date: request.createdAt.slice(0, 10), status: request.status, message: request.description })));
+  const [requests, setRequests] = useState<Request[]>(() => subscriptionFlow.requests()
+    .filter(request => request.subject === 'Demande d\'abonnement' || (request.subject && request.subject.toLowerCase().includes('abonnement')))
+    .map(request => ({ id: String(request.id), name: request.name, email: request.email, phone: request.phone, subject: request.subject || 'Demande d\'abonnement', date: (request.createdAt || request.date || '').slice(0, 10), status: request.status, message: request.description || '' })));
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('Tous');
   const [selected, setSelected] = useState<Request | null>(null);
@@ -37,7 +39,7 @@ export function AdminRequests() {
 
   const updateStatus = (id: string, status: ReqStatus) => {
     setRequests(prev => prev.map(r => r.id === id ? { ...r, status } : r));
-    subscriptionFlow.setRequestStatus(Number(id), status);
+    subscriptionFlow.setRequestStatus(Number(id), status as any);
     setSelected(null);
   };
 

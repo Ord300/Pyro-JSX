@@ -5,6 +5,7 @@ import { Button } from '../../components/ui/Button';
 import { Badge } from '../../components/ui/Badge';
 import { Card, CardContent } from '../../components/ui/Card';
 import { mockTestimonials, mockPricingPlans } from '../../data/mockData';
+import { usersDB, placesDB } from '../../services/dbService';
 import { useActivities } from '../../hooks/queries/activities';
 import { useTrainers } from '../../hooks/queries/trainers';
 
@@ -62,6 +63,17 @@ export function Home() {
   const [activeTab, setActiveTab] = useState<'monthly' | 'yearly'>('monthly');
   const { data: activities = [] } = useActivities();
   const { data: trainers = [] } = useTrainers();
+  const [membersCount, setMembersCount] = useState(() => usersDB.getAll().length);
+  const [placesCount, setPlacesCount] = useState(() => placesDB.getAll().length);
+
+  React.useEffect(() => {
+    const onChange = () => {
+      setMembersCount(usersDB.getAll().length);
+      setPlacesCount(placesDB.getAll().length);
+    };
+    window.addEventListener('db-change', onChange as any);
+    return () => window.removeEventListener('db-change', onChange as any);
+  }, []);
 
   return (
     <div className="min-h-screen">
@@ -102,10 +114,10 @@ export function Home() {
       {/* ── STATS ── */}
       <section id="stats" className="bg-gradient-to-r from-primary-600 to-primary-800">
         <div className="mx-auto max-w-6xl grid grid-cols-2 sm:grid-cols-4 divide-x divide-white/20">
-          <StatCard icon={Users} label="Membres actifs" value={500} />
-          <StatCard icon={Activity} label="Activités proposées" value={20} />
-          <StatCard icon={Dumbbell} label="Entraîneurs experts" value={15} />
-          <StatCard icon={MapPin} label="Espaces sportifs" value={10} />
+          <StatCard icon={Users} label="Membres actifs" value={membersCount} />
+          <StatCard icon={Activity} label="Activités proposées" value={activities.length} />
+          <StatCard icon={Dumbbell} label="Entraîneurs experts" value={trainers.length} />
+          <StatCard icon={MapPin} label="Espaces sportifs" value={placesCount} />
         </div>
       </section>
 
@@ -131,7 +143,7 @@ export function Home() {
                   </div>
                   <div className="mt-3 flex items-center justify-between">
                     <span className="text-sm font-bold text-primary-600 dark:text-primary-400">{activity.priceMonth} USD/mois</span>
-                    <Link to="/pricing">
+                    <Link to="/register">
                       <Button size="sm" variant="ghost" className="text-xs px-2 py-1">Voir →</Button>
                     </Link>
                   </div>
@@ -213,7 +225,7 @@ export function Home() {
             ))}
           </div>
           <div className="mt-10 text-center">
-            <Link to="/trainers"><Button size="lg" variant="outline">Rencontrer toute l'équipe</Button></Link>
+            <Link to="/register"><Button size="lg" variant="outline">Rencontrer toute l'équipe</Button></Link>
           </div>
         </div>
       </section>

@@ -71,6 +71,19 @@ const initializeDB = () => {
   if (!localStorage.getItem(DB_KEYS.users)) {
     localStorage.setItem(DB_KEYS.users, JSON.stringify(initialUsers));
   }
+  // Ensure an admin account exists (créé une seule fois)
+  try {
+    const rawUsers = localStorage.getItem(DB_KEYS.users) || '[]';
+    const parsedUsers = JSON.parse(rawUsers);
+    const hasAdmin = parsedUsers.some((u: any) => u.email && u.email.toLowerCase() === 'admin@gmail.com');
+    if (!hasAdmin) {
+      const newAdmin = { id: generateId(parsedUsers), name: 'Administrateur', email: 'admin@gmail.com', password: 'password', role: 'Gestionnaire', lastLogin: null };
+      parsedUsers.push(newAdmin);
+      localStorage.setItem(DB_KEYS.users, JSON.stringify(parsedUsers));
+    }
+  } catch (e) {
+    // ignore
+  }
   if (!localStorage.getItem(DB_KEYS.stats)) {
     localStorage.setItem(DB_KEYS.stats, JSON.stringify({}));
   }

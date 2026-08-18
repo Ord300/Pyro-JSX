@@ -3,10 +3,7 @@ import { Card } from '../../components/ui/Card';
 import { Badge } from '../../components/ui/Badge';
 import { Button } from '../../components/ui/Button';
 import { cn } from '../../utils/cn';
-import { mockStats } from '../../data/mockData';
-import { mockPayments } from '../../data/paymentData';
-import { mockSubscriptions } from '../../data/subscriptionData';
-import { mockReservations } from '../../data/reservationData';
+import { paymentsDB, subscriptionsDB, reservationsDB, usersDB } from '../../services/dbService';
 import { TrendingUp, Users, DollarSign, Calendar, Download, BarChart3, PieChart } from 'lucide-react';
 
 type ReportPeriod = 'week' | 'month' | 'year';
@@ -18,36 +15,44 @@ export function AdminReports() {
   const [dateFrom, setDateFrom] = useState('');
   const [dateTo, setDateTo] = useState('');
 
-  const totalRevenue = mockPayments
+  const payments = paymentsDB.getAll<any>();
+  const subscriptions = subscriptionsDB.getAll<any>();
+  const reservations = reservationsDB.getAll<any>();
+  const users = usersDB.getAll<any>();
+
+  const totalRevenue = payments
     .filter((p) => p.status === 'Réussi')
-    .reduce((sum, p) => sum + p.amount, 0);
+    .reduce((sum, p) => sum + (p.total ?? p.amount ?? 0), 0);
 
-  const activeSubscriptions = mockSubscriptions.filter((s) => s.status === 'Validée').length;
-  const pendingSubscriptions = mockSubscriptions.filter((s) => s.status === 'En attente').length;
-  const confirmedReservations = mockReservations.filter((r) => r.status === 'Confirmée').length;
+  const activeSubscriptions = subscriptions.filter((s) => s.status === 'active' || s.status === 'Validée').length;
+  const pendingSubscriptions = subscriptions.filter((s) => s.status === 'En attente' || s.status === 'pending').length;
+  const confirmedReservations = reservations.filter((r) => r.status === 'Confirmée' || r.status === 'confirmed').length;
 
-  const revenueByMethod = mockPayments
+  const revenueByMethod = payments
     .filter((p) => p.status === 'Réussi')
     .reduce((acc, p) => {
-      acc[p.method] = (acc[p.method] || 0) + p.amount;
+      const m = p.method || 'Autre';
+      acc[m] = (acc[m] || 0) + (p.total ?? p.amount ?? 0);
       return acc;
     }, {} as Record<string, number>);
 
-  const subscriptionByStatus = mockSubscriptions.reduce((acc, s) => {
-    acc[s.status] = (acc[s.status] || 0) + 1;
+  const subscriptionByStatus = subscriptions.reduce((acc, s) => {
+    const k = s.status || 'unknown';
+    acc[k] = (acc[k] || 0) + 1;
     return acc;
   }, {} as Record<string, number>);
 
-  const reservationByStatus = mockReservations.reduce((acc, r) => {
-    acc[r.status] = (acc[r.status] || 0) + 1;
+  const reservationByStatus = reservations.reduce((acc, r) => {
+    const k = r.status || 'unknown';
+    acc[k] = (acc[k] || 0) + 1;
     return acc;
   }, {} as Record<string, number>);
 
   const kpis = [
     { label: 'Revenu total', value: `${totalRevenue} USD`, icon: DollarSign, color: 'text-green-600 dark:text-green-400', change: '+12.5%' },
-    { label: 'Abonnés actifs', value: mockStats.activeSubscriptions, icon: Users, color: 'text-blue-600 dark:text-blue-400', change: '+8.2%' },
-    { label: 'Réservations', value: mockStats.totalReservations, icon: Calendar, color: 'text-primary-600 dark:text-primary-400', change: '+15.3%' },
-    { label: 'Taux de conversion', value: '68.4%', icon: TrendingUp, color: 'text-amber-600 dark:text-amber-400', change: '+3.1%' },
+    { label: 'Abonnés actifs', value: activeSubscriptions, icon: Users, color: 'text-blue-600 dark:text-blue-400', change: '+8.2%' },
+    { label: 'Réservations', value: reservations.length, icon: Calendar, color: 'text-primary-600 dark:text-primary-400', change: '+15.3%' },
+    { label: 'Taux de conversion', value: `${Math.round((subscriptions.length / Math.max(users.length,1))*100)}%`, icon: TrendingUp, color: 'text-amber-600 dark:text-amber-400', change: '+3.1%' },
   ];
 
   const handleExport = () => {
@@ -56,11 +61,11 @@ export function AdminReports() {
   };
 
   const renderBarChart = () => {
-    const data = reportType === 'revenue' 
-      ? Object.entries(revenueByMethod).map(([label, value]) => ({ label, value }))
+    const data: { label: string; value: number }[] = reportType === 'revenue'
+      ? Object.entries(revenueByMethod).map(([label, value]) => ({ label, value: Number(value) }))
       : reportType === 'subscriptions'
-        ? Object.entries(subscriptionByStatus).map(([label, value]) => ({ label, value }))
-        : Object.entries(reservationByStatus).map(([label, value]) => ({ label, value }));
+        ? Object.entries(subscriptionByStatus).map(([label, value]) => ({ label, value: Number(value) }))
+        : Object.entries(reservationByStatus).map(([label, value]) => ({ label, value: Number(value) }));
 
     const maxValue = Math.max(...data.map((d) => d.value), 1);
 
@@ -89,11 +94,11 @@ export function AdminReports() {
   };
 
   const renderPieChart = () => {
-    const data = reportType === 'revenue'
-      ? Object.entries(revenueByMethod).map(([label, value]) => ({ label, value }))
+    const data: { label: string; value: number }[] = reportType === 'revenue'
+      ? Object.entries(revenueByMethod).map(([label, value]) => ({ label, value: Number(value) }))
       : reportType === 'subscriptions'
-        ? Object.entries(subscriptionByStatus).map(([label, value]) => ({ label, value }))
-        : Object.entries(reservationByStatus).map(([label, value]) => ({ label, value }));
+        ? Object.entries(subscriptionByStatus).map(([label, value]) => ({ label, value: Number(value) }))
+        : Object.entries(reservationByStatus).map(([label, value]) => ({ label, value: Number(value) }));
 
     const total = data.reduce((sum, d) => sum + d.value, 0);
     const colors = ['#4F46E5', '#10B981', '#F59E0B', '#EF4444', '#3B82F6', '#8B5CF6'];

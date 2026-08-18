@@ -5,7 +5,7 @@ type User = any | null;
 
 type AuthContextValue = {
   user: User;
-  login: (email: string, password: string) => Promise<{ ok: boolean; message?: string }>;
+  login: (email: string, password: string) => Promise<{ ok: boolean; message?: string; user?: User }>;
   logout: () => void;
   isAdmin: boolean;
 };
@@ -25,13 +25,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const login = async (email: string, password: string) => {
     // simulate async
-    return new Promise<{ ok: boolean; message?: string }>((resolve) => {
+    return new Promise<{ ok: boolean; message?: string; user?: User }>((resolve) => {
       setTimeout(() => {
         const found = usersDB.getAll<any>().find(u => u.email?.toLowerCase() === email.toLowerCase() && u.password === password);
         if (!found) return resolve({ ok: false, message: "Adresse e-mail ou mot de passe incorrect." });
         localStorage.setItem('current_user_email', found.email.toLowerCase());
         setUser(found);
-        resolve({ ok: true });
+        resolve({ ok: true, user: found });
       }, 500);
     });
   };

@@ -4,7 +4,12 @@ import {
   PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid,
   Tooltip, ResponsiveContainer
 } from 'recharts';
-import { revenueData, activityDistribution, reservationData } from '../../data/adminData';
+import { revenueData as fallbackRevenue, activityDistribution as fallbackActivityDistribution, reservationData as fallbackReservationData } from '../../data/adminData';
+
+type RevenueChartProps = { payments?: any[] };
+type SubscriptionsChartProps = { subscriptions?: any[] };
+type ReservationsChartProps = { reservations?: any[] };
+type ActivityDonutChartProps = { subscriptions?: any[] };
 
 const tooltipStyle = {
   contentStyle: {
@@ -16,7 +21,18 @@ const tooltipStyle = {
 };
 
 // Graphique Revenus (Area)
-export function RevenueChart() {
+export function RevenueChart({ payments }: RevenueChartProps) {
+  // build monthly revenue from payments if provided
+  const data = React.useMemo(() => {
+    if (!payments || payments.length === 0) return fallbackRevenue;
+    const map: Record<string, number> = {};
+    payments.forEach(p => {
+      const d = p.date ? new Date(p.date) : new Date();
+      const key = d.toLocaleString('fr-FR', { month: 'short' });
+      map[key] = (map[key] || 0) + (p.total ?? p.amount ?? 0);
+    });
+    return Object.keys(map).map(k => ({ month: k, revenue: map[k], subscriptions: 0 }));
+  }, [payments]);
   return (
     <div className="rounded-xl border border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-900 p-6 shadow-sm">
       <div className="mb-6">
@@ -24,7 +40,7 @@ export function RevenueChart() {
         <p className="text-sm text-slate-400 mt-0.5">Revenus mensuels en USD</p>
       </div>
       <ResponsiveContainer width="100%" height={260}>
-        <AreaChart data={revenueData} margin={{ top: 5, right: 10, left: 0, bottom: 0 }}>
+        <AreaChart data={data} margin={{ top: 5, right: 10, left: 0, bottom: 0 }}>
           <defs>
             <linearGradient id="colorRevenue" x1="0" y1="0" x2="0" y2="1">
               <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.15} />
@@ -43,7 +59,17 @@ export function RevenueChart() {
 }
 
 // Graphique Abonnements (Bar)
-export function SubscriptionsChart() {
+export function SubscriptionsChart({ subscriptions }: SubscriptionsChartProps) {
+  const data = React.useMemo(() => {
+    if (!subscriptions || subscriptions.length === 0) return fallbackRevenue;
+    const map: Record<string, number> = {};
+    subscriptions.forEach(s => {
+      const d = s.createdAt ? new Date(s.createdAt) : new Date();
+      const key = d.toLocaleString('fr-FR', { month: 'short' });
+      map[key] = (map[key] || 0) + 1;
+    });
+    return Object.keys(map).map(k => ({ month: k, subscriptions: map[k] }));
+  }, [subscriptions]);
   return (
     <div className="rounded-xl border border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-900 p-6 shadow-sm">
       <div className="mb-6">
@@ -51,7 +77,7 @@ export function SubscriptionsChart() {
         <p className="text-sm text-slate-400 mt-0.5">Par mois</p>
       </div>
       <ResponsiveContainer width="100%" height={260}>
-        <BarChart data={revenueData} margin={{ top: 5, right: 10, left: 0, bottom: 0 }}>
+        <BarChart data={data} margin={{ top: 5, right: 10, left: 0, bottom: 0 }}>
           <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" vertical={false} />
           <XAxis dataKey="month" tick={{ fontSize: 12, fill: '#94a3b8' }} axisLine={false} tickLine={false} />
           <YAxis tick={{ fontSize: 12, fill: '#94a3b8' }} axisLine={false} tickLine={false} />
@@ -64,7 +90,18 @@ export function SubscriptionsChart() {
 }
 
 // Graphique Réservations (Line)
-export function ReservationsChart() {
+export function ReservationsChart({ reservations }: ReservationsChartProps) {
+  const data = React.useMemo(() => {
+    if (!reservations || reservations.length === 0) return fallbackReservationData;
+    // group by day name
+    const map: Record<string, number> = {};
+    reservations.forEach(r => {
+      const d = r.date ? new Date(r.date) : new Date();
+      const key = d.toLocaleString('fr-FR', { weekday: 'short' });
+      map[key] = (map[key] || 0) + 1;
+    });
+    return Object.keys(map).map(k => ({ day: k, reservations: map[k] }));
+  }, [reservations]);
   return (
     <div className="rounded-xl border border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-900 p-6 shadow-sm">
       <div className="mb-6">
@@ -72,7 +109,7 @@ export function ReservationsChart() {
         <p className="text-sm text-slate-400 mt-0.5">Par jour</p>
       </div>
       <ResponsiveContainer width="100%" height={220}>
-        <LineChart data={reservationData} margin={{ top: 5, right: 10, left: 0, bottom: 0 }}>
+        <LineChart data={data} margin={{ top: 5, right: 10, left: 0, bottom: 0 }}>
           <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
           <XAxis dataKey="day" tick={{ fontSize: 12, fill: '#94a3b8' }} axisLine={false} tickLine={false} />
           <YAxis tick={{ fontSize: 12, fill: '#94a3b8' }} axisLine={false} tickLine={false} />
@@ -85,7 +122,17 @@ export function ReservationsChart() {
 }
 
 // Graphique Activités (Donut Pie)
-export function ActivityDonutChart() {
+export function ActivityDonutChart({ subscriptions }: ActivityDonutChartProps) {
+  const dist = React.useMemo(() => {
+    if (!subscriptions || subscriptions.length === 0) return fallbackActivityDistribution;
+    const map: Record<string, number> = {};
+    subscriptions.forEach((s:any) => {
+      const name = s.activityName || s.activity || 'Autre';
+      map[name] = (map[name] || 0) + 1;
+    });
+    const colors = ['#3b82f6','#10b981','#f59e0b','#ef4444','#8b5cf6','#06b6d4'];
+    return Object.keys(map).map((k, i) => ({ name: k, value: Math.round((map[k] / subscriptions.length) * 100), color: colors[i % colors.length] }));
+  }, [subscriptions]);
   return (
     <div className="rounded-xl border border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-900 p-6 shadow-sm">
       <div className="mb-4">
@@ -95,8 +142,8 @@ export function ActivityDonutChart() {
       <div className="flex flex-col sm:flex-row items-center gap-4">
         <ResponsiveContainer width="100%" height={180}>
           <PieChart>
-            <Pie data={activityDistribution} cx="50%" cy="50%" innerRadius={55} outerRadius={80} paddingAngle={3} dataKey="value">
-              {activityDistribution.map((entry, index) => (
+            <Pie data={dist} cx="50%" cy="50%" innerRadius={55} outerRadius={80} paddingAngle={3} dataKey="value">
+              {dist.map((entry, index) => (
                 <Cell key={`cell-${index}`} fill={entry.color} />
               ))}
             </Pie>
@@ -104,7 +151,7 @@ export function ActivityDonutChart() {
           </PieChart>
         </ResponsiveContainer>
         <div className="flex flex-col gap-2 w-full sm:w-auto shrink-0">
-          {activityDistribution.map((item) => (
+          {dist.map((item) => (
             <div key={item.name} className="flex items-center gap-2 text-xs">
               <span className="h-2.5 w-2.5 rounded-full shrink-0" style={{ backgroundColor: item.color }} />
               <span className="text-slate-600 dark:text-slate-400 flex-1">{item.name}</span>
