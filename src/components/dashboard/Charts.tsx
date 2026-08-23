@@ -1,10 +1,12 @@
-import React from 'react';
+"use client";
+
+import React from "react";
 import {
   AreaChart, Area, BarChart, Bar, LineChart, Line,
   PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid,
   Tooltip, ResponsiveContainer
-} from 'recharts';
-import { revenueData as fallbackRevenue, activityDistribution as fallbackActivityDistribution, reservationData as fallbackReservationData } from '../../data/adminData';
+} from "recharts";
+import { revenueData as fallbackRevenue, activityDistribution as fallbackActivityDistribution, reservationData as fallbackReservationData } from "@/src/data/adminData";
 
 type RevenueChartProps = { payments?: any[] };
 type SubscriptionsChartProps = { subscriptions?: any[] };
@@ -13,25 +15,24 @@ type ActivityDonutChartProps = { subscriptions?: any[] };
 
 const tooltipStyle = {
   contentStyle: {
-    borderRadius: '8px',
-    border: '1px solid #e2e8f0',
-    boxShadow: '0 4px 6px -1px rgba(0,0,0,0.1)',
-    fontSize: '12px',
+    borderRadius: "8px",
+    border: "1px solid #e2e8f0",
+    boxShadow: "0 4px 6px -1px rgba(0,0,0,0.1)",
+    fontSize: "12px",
   },
 };
 
 // Graphique Revenus (Area)
 export function RevenueChart({ payments }: RevenueChartProps) {
-  // build monthly revenue from payments if provided
   const data = React.useMemo(() => {
     if (!payments || payments.length === 0) return fallbackRevenue;
     const map: Record<string, number> = {};
-    payments.forEach(p => {
+    payments.forEach((p) => {
       const d = p.date ? new Date(p.date) : new Date();
-      const key = d.toLocaleString('fr-FR', { month: 'short' });
+      const key = d.toLocaleString("fr-FR", { month: "short" });
       map[key] = (map[key] || 0) + (p.total ?? p.amount ?? 0);
     });
-    return Object.keys(map).map(k => ({ month: k, revenue: map[k], subscriptions: 0 }));
+    return Object.keys(map).map((k) => ({ month: k, revenue: map[k], subscriptions: 0 }));
   }, [payments]);
   return (
     <div className="rounded-xl border border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-900 p-6 shadow-sm">
@@ -48,10 +49,10 @@ export function RevenueChart({ payments }: RevenueChartProps) {
             </linearGradient>
           </defs>
           <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
-          <XAxis dataKey="month" tick={{ fontSize: 12, fill: '#94a3b8' }} axisLine={false} tickLine={false} />
-          <YAxis tick={{ fontSize: 12, fill: '#94a3b8' }} axisLine={false} tickLine={false} tickFormatter={(v) => `$${v}`} />
-          <Tooltip {...tooltipStyle} formatter={(value) => [`$${Number(value ?? 0)}`, 'Revenus']} />
-          <Area type="monotone" dataKey="revenue" stroke="#3b82f6" strokeWidth={2.5} fill="url(#colorRevenue)" dot={{ fill: '#3b82f6', r: 4 }} activeDot={{ r: 6 }} />
+          <XAxis dataKey="month" tick={{ fontSize: 12, fill: "#94a3b8" }} axisLine={false} tickLine={false} />
+          <YAxis tick={{ fontSize: 12, fill: "#94a3b8" }} axisLine={false} tickLine={false} tickFormatter={(v) => `$${v}`} />
+          <Tooltip {...tooltipStyle} formatter={(value) => [`$${Number(value ?? 0)}`, "Revenus"]} />
+          <Area type="monotone" dataKey="revenue" stroke="#3b82f6" strokeWidth={2.5} fill="url(#colorRevenue)" dot={{ fill: "#3b82f6", r: 4 }} activeDot={{ r: 6 }} />
         </AreaChart>
       </ResponsiveContainer>
     </div>
@@ -63,12 +64,12 @@ export function SubscriptionsChart({ subscriptions }: SubscriptionsChartProps) {
   const data = React.useMemo(() => {
     if (!subscriptions || subscriptions.length === 0) return fallbackRevenue;
     const map: Record<string, number> = {};
-    subscriptions.forEach(s => {
+    subscriptions.forEach((s) => {
       const d = s.createdAt ? new Date(s.createdAt) : new Date();
-      const key = d.toLocaleString('fr-FR', { month: 'short' });
+      const key = d.toLocaleString("fr-FR", { month: "short" });
       map[key] = (map[key] || 0) + 1;
     });
-    return Object.keys(map).map(k => ({ month: k, subscriptions: map[k] }));
+    return Object.keys(map).map((k) => ({ month: k, subscriptions: map[k] }));
   }, [subscriptions]);
   return (
     <div className="rounded-xl border border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-900 p-6 shadow-sm">
@@ -79,9 +80,9 @@ export function SubscriptionsChart({ subscriptions }: SubscriptionsChartProps) {
       <ResponsiveContainer width="100%" height={260}>
         <BarChart data={data} margin={{ top: 5, right: 10, left: 0, bottom: 0 }}>
           <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" vertical={false} />
-          <XAxis dataKey="month" tick={{ fontSize: 12, fill: '#94a3b8' }} axisLine={false} tickLine={false} />
-          <YAxis tick={{ fontSize: 12, fill: '#94a3b8' }} axisLine={false} tickLine={false} />
-          <Tooltip {...tooltipStyle} formatter={(value) => [Number(value ?? 0), 'Abonnements']} />
+          <XAxis dataKey="month" tick={{ fontSize: 12, fill: "#94a3b8" }} axisLine={false} tickLine={false} />
+          <YAxis tick={{ fontSize: 12, fill: "#94a3b8" }} axisLine={false} tickLine={false} />
+          <Tooltip {...tooltipStyle} formatter={(value) => [Number(value ?? 0), "Abonnements"]} />
           <Bar dataKey="subscriptions" fill="#3b82f6" radius={[6, 6, 0, 0]} maxBarSize={40} />
         </BarChart>
       </ResponsiveContainer>
@@ -93,14 +94,13 @@ export function SubscriptionsChart({ subscriptions }: SubscriptionsChartProps) {
 export function ReservationsChart({ reservations }: ReservationsChartProps) {
   const data = React.useMemo(() => {
     if (!reservations || reservations.length === 0) return fallbackReservationData;
-    // group by day name
     const map: Record<string, number> = {};
-    reservations.forEach(r => {
+    reservations.forEach((r) => {
       const d = r.date ? new Date(r.date) : new Date();
-      const key = d.toLocaleString('fr-FR', { weekday: 'short' });
+      const key = d.toLocaleString("fr-FR", { weekday: "short" });
       map[key] = (map[key] || 0) + 1;
     });
-    return Object.keys(map).map(k => ({ day: k, reservations: map[k] }));
+    return Object.keys(map).map((k) => ({ day: k, reservations: map[k] }));
   }, [reservations]);
   return (
     <div className="rounded-xl border border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-900 p-6 shadow-sm">
@@ -111,10 +111,10 @@ export function ReservationsChart({ reservations }: ReservationsChartProps) {
       <ResponsiveContainer width="100%" height={220}>
         <LineChart data={data} margin={{ top: 5, right: 10, left: 0, bottom: 0 }}>
           <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
-          <XAxis dataKey="day" tick={{ fontSize: 12, fill: '#94a3b8' }} axisLine={false} tickLine={false} />
-          <YAxis tick={{ fontSize: 12, fill: '#94a3b8' }} axisLine={false} tickLine={false} />
-          <Tooltip {...tooltipStyle} formatter={(value) => [Number(value ?? 0), 'Réservations']} />
-          <Line type="monotone" dataKey="reservations" stroke="#10b981" strokeWidth={2.5} dot={{ fill: '#10b981', r: 4 }} activeDot={{ r: 6 }} />
+          <XAxis dataKey="day" tick={{ fontSize: 12, fill: "#94a3b8" }} axisLine={false} tickLine={false} />
+          <YAxis tick={{ fontSize: 12, fill: "#94a3b8" }} axisLine={false} tickLine={false} />
+          <Tooltip {...tooltipStyle} formatter={(value) => [Number(value ?? 0), "Réservations"]} />
+          <Line type="monotone" dataKey="reservations" stroke="#10b981" strokeWidth={2.5} dot={{ fill: "#10b981", r: 4 }} activeDot={{ r: 6 }} />
         </LineChart>
       </ResponsiveContainer>
     </div>
@@ -126,11 +126,11 @@ export function ActivityDonutChart({ subscriptions }: ActivityDonutChartProps) {
   const dist = React.useMemo(() => {
     if (!subscriptions || subscriptions.length === 0) return fallbackActivityDistribution;
     const map: Record<string, number> = {};
-    subscriptions.forEach((s:any) => {
-      const name = s.activityName || s.activity || 'Autre';
+    subscriptions.forEach((s: any) => {
+      const name = s.activityName || s.activity || "Autre";
       map[name] = (map[name] || 0) + 1;
     });
-    const colors = ['#3b82f6','#10b981','#f59e0b','#ef4444','#8b5cf6','#06b6d4'];
+    const colors = ["#3b82f6", "#10b981", "#f59e0b", "#ef4444", "#8b5cf6", "#06b6d4"];
     return Object.keys(map).map((k, i) => ({ name: k, value: Math.round((map[k] / subscriptions.length) * 100), color: colors[i % colors.length] }));
   }, [subscriptions]);
   return (
@@ -147,7 +147,7 @@ export function ActivityDonutChart({ subscriptions }: ActivityDonutChartProps) {
                 <Cell key={`cell-${index}`} fill={entry.color} />
               ))}
             </Pie>
-            <Tooltip {...tooltipStyle} formatter={(value) => [`${Number(value ?? 0)}%`, 'Abonnés']} />
+            <Tooltip {...tooltipStyle} formatter={(value) => [`${Number(value ?? 0)}%`, "Abonnés"]} />
           </PieChart>
         </ResponsiveContainer>
         <div className="flex flex-col gap-2 w-full sm:w-auto shrink-0">

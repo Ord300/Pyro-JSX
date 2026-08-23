@@ -1,5 +1,7 @@
-import React, { createContext, useContext, useEffect, useState } from 'react';
-import { usersDB } from '../services/dbService';
+"use client";
+
+import React, { createContext, useContext, useEffect, useState } from "react";
+import { usersDB } from "../services/dbService";
 
 type User = any | null;
 
@@ -16,20 +18,19 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [user, setUser] = useState<User>(null);
 
   useEffect(() => {
-    const email = localStorage.getItem('current_user_email');
+    const email = localStorage.getItem("current_user_email");
     if (email) {
-      const found = usersDB.getAll<any>().find(u => u.email?.toLowerCase() === email.toLowerCase());
+      const found = usersDB.getAll<any>().find((u) => u.email?.toLowerCase() === email.toLowerCase());
       if (found) setUser(found);
     }
   }, []);
 
   const login = async (email: string, password: string) => {
-    // simulate async
     return new Promise<{ ok: boolean; message?: string; user?: User }>((resolve) => {
       setTimeout(() => {
-        const found = usersDB.getAll<any>().find(u => u.email?.toLowerCase() === email.toLowerCase() && u.password === password);
+        const found = usersDB.getAll<any>().find((u) => u.email?.toLowerCase() === email.toLowerCase() && u.password === password);
         if (!found) return resolve({ ok: false, message: "Adresse e-mail ou mot de passe incorrect." });
-        localStorage.setItem('current_user_email', found.email.toLowerCase());
+        localStorage.setItem("current_user_email", found.email.toLowerCase());
         setUser(found);
         resolve({ ok: true, user: found });
       }, 500);
@@ -37,7 +38,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const logout = () => {
-    localStorage.removeItem('current_user_email');
+    localStorage.removeItem("current_user_email");
     setUser(null);
   };
 
@@ -45,7 +46,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     user,
     login,
     logout,
-    isAdmin: !!user && user.role === 'Gestionnaire',
+    isAdmin: !!user && user.role === "Gestionnaire",
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
@@ -53,7 +54,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
 export const useAuth = () => {
   const ctx = useContext(AuthContext);
-  if (!ctx) throw new Error('useAuth must be used within AuthProvider');
+  if (!ctx) throw new Error("useAuth must be used within AuthProvider");
   return ctx;
 };
 

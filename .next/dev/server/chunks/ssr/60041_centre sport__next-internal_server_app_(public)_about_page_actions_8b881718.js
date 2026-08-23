@@ -1,0 +1,7 @@
+module.exports = [
+"[project]/Téléchargements/projet IA/centre sport/.next-internal/server/app/(public)/about/page/actions.js [app-rsc] (server actions loader, ecmascript)", ((__turbopack_context__, module, exports) => {
+
+}),
+];
+
+//# sourceMappingURL=60041_centre%20sport__next-internal_server_app_%28public%29_about_page_actions_8b881718.js.map

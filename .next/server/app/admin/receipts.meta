@@ -1,0 +1,18 @@
+{
+  "status": 307,
+  "headers": {
+    "location": "/login",
+    "x-nextjs-stale-time": "300",
+    "x-nextjs-prerender": "1",
+    "x-next-cache-tags": "_N_T_/layout,_N_T_/admin/layout,_N_T_/admin/receipts/layout,_N_T_/admin/receipts/page,_N_T_/admin/receipts"
+  },
+  "segmentPaths": [
+    "/_tree",
+    "/_full",
+    "/admin/receipts/__PAGE__",
+    "/admin/receipts",
+    "/admin",
+    "/_index",
+    "/_head"
+  ]
+}

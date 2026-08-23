@@ -1,0 +1,10 @@
+var R=require("../../chunks/ssr/[turbopack]_runtime.js")("server/app/_global-error/page.js")
+R.c("server/chunks/ssr/a426b_a88463d3._.js")
+R.c("server/chunks/ssr/[root-of-the-server]__a06a93ca._.js")
+R.c("server/chunks/ssr/a426b_next_dist_7d97ad9b._.js")
+R.c("server/chunks/ssr/[root-of-the-server]__9194d394._.js")
+R.c("server/chunks/ssr/[root-of-the-server]__87345865._.js")
+R.c("server/chunks/ssr/[root-of-the-server]__b13a92db._.js")
+R.c("server/chunks/ssr/60041_centre sport__next-internal_server_app__global-error_page_actions_39632577.js")
+R.m(96383)
+module.exports=R.m(96383).exports

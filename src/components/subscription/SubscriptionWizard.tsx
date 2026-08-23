@@ -1,12 +1,14 @@
-import React, { useState } from 'react';
-import { Button } from '../ui/Button';
-import { cn } from '../../utils/cn';
-import { useActivities } from '../../hooks/queries/activities';
-import { mockSubscriptionPlans } from '../../data/subscriptionData';
-import { mockPaymentProviders } from '../../data/paymentData';
-import { processPayment } from '../../services/paymentService';
-import type { PaymentMethod } from '../../types/payment';
-import { CheckCircle2, ChevronLeft, ChevronRight, Loader2, ShieldCheck } from 'lucide-react';
+"use client";
+
+import React, { useState } from "react";
+import { Button } from "../ui/Button";
+import { cn } from "@/src/utils/cn";
+import { useActivities } from "@/src/hooks/queries/activities";
+import { mockSubscriptionPlans } from "@/src/data/subscriptionData";
+import { mockPaymentProviders } from "@/src/data/paymentData";
+import { processPayment } from "@/src/services/paymentService";
+import type { PaymentMethod } from "@/src/types/payment";
+import { CheckCircle2, ChevronLeft, ChevronRight, Loader2, ShieldCheck } from "lucide-react";
 
 interface SubscriptionWizardProps {
   onComplete: (reference: string) => void;
@@ -14,12 +16,12 @@ interface SubscriptionWizardProps {
 }
 
 const steps = [
-  { id: 1, label: 'Demande' },
-  { id: 2, label: 'Validation' },
-  { id: 3, label: 'Activité' },
-  { id: 4, label: 'Formule' },
-  { id: 5, label: 'Paiement' },
-  { id: 6, label: 'Confirmation' },
+  { id: 1, label: "Demande" },
+  { id: 2, label: "Validation" },
+  { id: 3, label: "Activité" },
+  { id: 4, label: "Formule" },
+  { id: 5, label: "Paiement" },
+  { id: 6, label: "Confirmation" },
 ];
 
 export function SubscriptionWizard({ onComplete, onCancel }: SubscriptionWizardProps) {
@@ -28,11 +30,11 @@ export function SubscriptionWizard({ onComplete, onCancel }: SubscriptionWizardP
   const [selectedActivity, setSelectedActivity] = useState<number | null>(null);
   const [selectedPlan, setSelectedPlan] = useState<string | null>(null);
   const [selectedProvider, setSelectedProvider] = useState<string | null>(null);
-  const [phoneNumber, setPhoneNumber] = useState('');
+  const [phoneNumber, setPhoneNumber] = useState("");
   const [agreedToTerms, setAgreedToTerms] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
-  const [paymentReference, setPaymentReference] = useState('');
-  const [error, setError] = useState('');
+  const [paymentReference, setPaymentReference] = useState("");
+  const [error, setError] = useState("");
 
   const selectedActivityData = activities.find((a) => a.id === selectedActivity);
   const selectedPlanData = mockSubscriptionPlans.find((p) => p.id === selectedPlan);
@@ -49,14 +51,14 @@ export function SubscriptionWizard({ onComplete, onCancel }: SubscriptionWizardP
       case 4:
         return selectedPlan !== null;
       case 5:
-        return selectedProvider !== null && (selectedProvider === 'cash' || phoneNumber.length >= 10);
+        return selectedProvider !== null && (selectedProvider === "cash" || phoneNumber.length >= 10);
       default:
         return false;
     }
   };
 
   const handleNext = () => {
-    setError('');
+    setError("");
     if (currentStep === 5) {
       handlePayment();
     } else {
@@ -67,20 +69,20 @@ export function SubscriptionWizard({ onComplete, onCancel }: SubscriptionWizardP
   const handlePayment = async () => {
     if (!selectedPlanData || !selectedProviderData) return;
     setIsProcessing(true);
-    setError('');
+    setError("");
 
     const methodMap: Record<string, PaymentMethod> = {
-      mpesa: 'M-Pesa',
-      'orange-money': 'Orange Money',
-      card: 'Carte Bancaire',
-      cash: 'Espèces',
+      mpesa: "M-Pesa",
+      "orange-money": "Orange Money",
+      card: "Carte Bancaire",
+      cash: "Espèces",
     };
 
     const result = await processPayment({
       amount: selectedPlanData.price,
       currency: selectedPlanData.currency,
       method: methodMap[selectedProviderData.id],
-      phoneNumber: selectedProvider === 'cash' ? undefined : phoneNumber,
+      phoneNumber: selectedProvider === "cash" ? undefined : phoneNumber,
       description: `Abonnement ${selectedPlanData.name} - ${selectedActivityData?.name}`,
     });
 
@@ -106,27 +108,27 @@ export function SubscriptionWizard({ onComplete, onCancel }: SubscriptionWizardP
             <div className="flex flex-col items-center">
               <div
                 className={cn(
-                  'flex h-10 w-10 items-center justify-center rounded-full border-2 text-sm font-semibold transition-colors',
+                  "flex h-10 w-10 items-center justify-center rounded-full border-2 text-sm font-semibold transition-colors",
                   currentStep > step.id
-                    ? 'border-primary-600 bg-primary-600 text-white'
+                    ? "border-primary-600 bg-primary-600 text-white"
                     : currentStep === step.id
-                      ? 'border-primary-600 bg-primary-50 text-primary-600 dark:bg-primary-900/20 dark:text-primary-400'
-                      : 'border-slate-200 text-slate-400 dark:border-slate-700'
+                      ? "border-primary-600 bg-primary-50 text-primary-600 dark:bg-primary-900/20 dark:text-primary-400"
+                      : "border-slate-200 text-slate-400 dark:border-slate-700"
                 )}
               >
                 {currentStep > step.id ? <CheckCircle2 className="h-5 w-5" /> : step.id}
               </div>
               <span className={cn(
-                'mt-2 hidden text-xs font-medium sm:block',
-                currentStep >= step.id ? 'text-primary-600 dark:text-primary-400' : 'text-slate-400'
+                "mt-2 hidden text-xs font-medium sm:block",
+                currentStep >= step.id ? "text-primary-600 dark:text-primary-400" : "text-slate-400"
               )}>
                 {step.label}
               </span>
             </div>
             {index < steps.length - 1 && (
               <div className={cn(
-                'h-0.5 flex-1 mx-2 rounded',
-                currentStep > step.id ? 'bg-primary-600' : 'bg-slate-200 dark:bg-slate-700'
+                "h-0.5 flex-1 mx-2 rounded",
+                currentStep > step.id ? "bg-primary-600" : "bg-slate-200 dark:bg-slate-700"
               )} />
             )}
           </React.Fragment>
@@ -205,10 +207,10 @@ export function SubscriptionWizard({ onComplete, onCancel }: SubscriptionWizardP
             key={activity.id}
             onClick={() => setSelectedActivity(activity.id)}
             className={cn(
-              'rounded-lg border-2 p-4 text-left transition-all hover:shadow-md',
+              "rounded-lg border-2 p-4 text-left transition-all hover:shadow-md",
               selectedActivity === activity.id
-                ? 'border-primary-600 bg-primary-50 dark:bg-primary-900/20'
-                : 'border-slate-200 hover:border-slate-300 dark:border-slate-700 dark:hover:border-slate-600'
+                ? "border-primary-600 bg-primary-50 dark:bg-primary-900/20"
+                : "border-slate-200 hover:border-slate-300 dark:border-slate-700 dark:hover:border-slate-600"
             )}
           >
             <div className="flex items-center gap-3">
@@ -238,10 +240,10 @@ export function SubscriptionWizard({ onComplete, onCancel }: SubscriptionWizardP
             key={plan.id}
             onClick={() => setSelectedPlan(plan.id)}
             className={cn(
-              'relative rounded-lg border-2 p-6 text-left transition-all hover:shadow-md',
+              "relative rounded-lg border-2 p-6 text-left transition-all hover:shadow-md",
               selectedPlan === plan.id
-                ? 'border-primary-600 bg-primary-50 dark:bg-primary-900/20'
-                : 'border-slate-200 hover:border-slate-300 dark:border-slate-700 dark:hover:border-slate-600'
+                ? "border-primary-600 bg-primary-50 dark:bg-primary-900/20"
+                : "border-slate-200 hover:border-slate-300 dark:border-slate-700 dark:hover:border-slate-600"
             )}
           >
             {plan.popular && (
@@ -271,7 +273,7 @@ export function SubscriptionWizard({ onComplete, onCancel }: SubscriptionWizardP
   const renderStep5 = () => (
     <div className="space-y-6">
       <h3 className="text-lg font-semibold text-slate-900 dark:text-white">Paiement sécurisé</h3>
-      
+
       <div className="rounded-lg border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-800/50">
         <h4 className="text-sm font-medium text-slate-700 dark:text-slate-300">Récapitulatif</h4>
         <div className="mt-2 space-y-1 text-sm text-slate-600 dark:text-slate-400">
@@ -291,10 +293,10 @@ export function SubscriptionWizard({ onComplete, onCancel }: SubscriptionWizardP
               key={provider.id}
               onClick={() => setSelectedProvider(provider.id)}
               className={cn(
-                'flex items-center gap-3 rounded-lg border-2 p-4 text-left transition-all',
+                "flex items-center gap-3 rounded-lg border-2 p-4 text-left transition-all",
                 selectedProvider === provider.id
-                  ? 'border-primary-600 bg-primary-50 dark:bg-primary-900/20'
-                  : 'border-slate-200 hover:border-slate-300 dark:border-slate-700 dark:hover:border-slate-600'
+                  ? "border-primary-600 bg-primary-50 dark:bg-primary-900/20"
+                  : "border-slate-200 hover:border-slate-300 dark:border-slate-700 dark:hover:border-slate-600"
               )}
             >
               <span className="text-2xl">{provider.icon}</span>
@@ -307,7 +309,7 @@ export function SubscriptionWizard({ onComplete, onCancel }: SubscriptionWizardP
         </div>
       </div>
 
-      {selectedProvider && selectedProvider !== 'cash' && (
+      {selectedProvider && selectedProvider !== "cash" && (
         <div>
           <label className="mb-2 block text-sm font-medium text-slate-700 dark:text-slate-300">
             Numéro de téléphone ({selectedProviderData?.name})
@@ -325,7 +327,7 @@ export function SubscriptionWizard({ onComplete, onCancel }: SubscriptionWizardP
         </div>
       )}
 
-      {selectedProvider === 'cash' && (
+      {selectedProvider === "cash" && (
         <div className="rounded-lg border border-blue-200 bg-blue-50 p-4 dark:border-blue-800 dark:bg-blue-900/20">
           <p className="text-sm text-blue-800 dark:text-blue-200">
             💵 Vous pourrez payer en espèces à la réception du centre. Votre abonnement sera activé après confirmation du paiement.
@@ -413,7 +415,7 @@ export function SubscriptionWizard({ onComplete, onCancel }: SubscriptionWizardP
           disabled={isProcessing}
         >
           <ChevronLeft className="mr-2 h-4 w-4" />
-          {currentStep === 1 ? 'Annuler' : 'Retour'}
+          {currentStep === 1 ? "Annuler" : "Retour"}
         </Button>
 
         {currentStep < 6 && (
@@ -425,7 +427,7 @@ export function SubscriptionWizard({ onComplete, onCancel }: SubscriptionWizardP
               </>
             ) : (
               <>
-                {currentStep === 5 ? 'Payer' : 'Continuer'}
+                {currentStep === 5 ? "Payer" : "Continuer"}
                 <ChevronRight className="ml-2 h-4 w-4" />
               </>
             )}

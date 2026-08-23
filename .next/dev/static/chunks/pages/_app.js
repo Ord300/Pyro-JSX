@@ -1,0 +1,13 @@
+__turbopack_load_page_chunks__("/_app", [
+  "static/chunks/a426b_next_dist_compiled_789bd58c._.js",
+  "static/chunks/a426b_next_dist_shared_lib_027ab140._.js",
+  "static/chunks/a426b_next_dist_client_31fb5783._.js",
+  "static/chunks/a426b_next_dist_186e5fb2._.js",
+  "static/chunks/a426b_next_app_eee663ec.js",
+  "static/chunks/[next]_entry_page-loader_ts_9e3a1ccc._.js",
+  "static/chunks/a426b_react-dom_db7d8b78._.js",
+  "static/chunks/a426b_3d1b890f._.js",
+  "static/chunks/[root-of-the-server]__9bbcb8b8._.js",
+  "static/chunks/Téléchargements_projet IA_centre sport_pages__app_2da965e7._.js",
+  "static/chunks/turbopack-Téléchargements_projet IA_centre sport_pages__app_26238158._.js"
+])
