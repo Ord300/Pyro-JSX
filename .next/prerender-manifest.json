@@ -252,6 +252,31 @@
         "x-next-revalidate-tag-token"
       ]
     },
+    "/admin/gallery": {
+      "experimentalBypassFor": [
+        {
+          "type": "header",
+          "key": "next-action"
+        },
+        {
+          "type": "header",
+          "key": "content-type",
+          "value": "multipart/form-data;.*"
+        }
+      ],
+      "initialRevalidateSeconds": false,
+      "srcRoute": "/admin/gallery",
+      "dataRoute": "/admin/gallery.rsc",
+      "prefetchDataRoute": null,
+      "allowHeader": [
+        "host",
+        "x-matched-path",
+        "x-prerender-revalidate",
+        "x-prerender-revalidate-if-generated",
+        "x-next-revalidated-tags",
+        "x-next-revalidate-tag-token"
+      ]
+    },
     "/admin/messages": {
       "experimentalBypassFor": [
         {
@@ -756,8 +781,8 @@
   "dynamicRoutes": {},
   "notFoundRoutes": [],
   "preview": {
-    "previewModeId": "0d769f607dcb3b39d22dd8c5e2e5b48e",
-    "previewModeSigningKey": "bb1e347f78d46d14901dffd574970c1e555a20b67488baa0449c685614bd3b6c",
-    "previewModeEncryptionKey": "a254661a56b2c887c1c3053ecbfd890192c01ae6ae9853f3273494b4c48d7851"
+    "previewModeId": "9538c06fce5277ea4bb95e103d478a53",
+    "previewModeSigningKey": "cf2a9d287dc81dc8ddc45e2808463900b4841357f2f90ee4b8664be7f3ab8e17",
+    "previewModeEncryptionKey": "4c7234c6c0875b821edb5b3771d9468d5e6cfdad7ca785630151e61bd135dacc"
   }
 }

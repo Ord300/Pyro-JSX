@@ -35,21 +35,21 @@ export default function UserLayout({
 
   if (isLoading) {
     return (
-      <div className="flex h-screen items-center justify-center bg-background dark:bg-dark-background">
+      <div className="flex h-screen items-center justify-center bg-emerald-950">
         <div className="flex flex-col items-center gap-3">
-          <div className="h-10 w-10 animate-spin rounded-full border-4 border-primary-600 border-t-transparent" />
-          <p className="text-sm text-slate-500 dark:text-slate-400">Chargement...</p>
+          <div className="h-10 w-10 animate-spin rounded-full border-4 border-emerald-500 border-t-transparent" />
+          <p className="text-sm text-emerald-200">Chargement...</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="flex h-screen bg-background dark:bg-dark-background text-slate-900 dark:text-slate-50 overflow-hidden">
+    <div className="flex h-screen bg-emerald-950/5 text-slate-900 dark:text-slate-50 overflow-hidden">
       <UserSidebar isOpen={isSidebarOpen} setIsOpen={setIsSidebarOpen} />
       <div className="flex flex-1 flex-col overflow-hidden">
         <UserNavbar onMenuClick={() => setIsSidebarOpen(true)} />
-        <main className="flex-1 overflow-y-auto bg-slate-50 dark:bg-slate-950 p-4 sm:p-6 lg:p-8">
+        <main className="flex-1 overflow-y-auto bg-gradient-to-br from-emerald-50/80 via-teal-50/50 to-slate-50 dark:from-emerald-950/20 dark:via-teal-950/20 dark:to-slate-950 p-4 sm:p-6 lg:p-8">
           {children}
         </main>
       </div>

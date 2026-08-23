@@ -82,8 +82,8 @@ export default function UserNotifications() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white">Notifications</h1>
-          <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
+          <h1 className="text-2xl font-bold tracking-tight text-emerald-950 dark:text-emerald-50">Notifications</h1>
+          <p className="mt-1 text-sm text-emerald-900/60 dark:text-emerald-200/60">
             {unreadCount > 0 ? `${unreadCount} notification(s) non lue(s)` : "Toutes les notifications sont lues"}
           </p>
         </div>
@@ -111,7 +111,7 @@ export default function UserNotifications() {
             key={notification.id}
             className={cn(
               "p-4 transition-colors",
-              !notification.read && "border-primary-200 bg-primary-50/50 dark:border-primary-800 dark:bg-primary-900/10"
+              !notification.read && "border-emerald-200 bg-emerald-50/50 dark:border-emerald-800 dark:bg-emerald-900/10"
             )}
           >
             <div className="flex items-start gap-3">

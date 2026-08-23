@@ -1,6 +1,6 @@
 "use client";
 
-import React, { createContext, useContext, useEffect, useState } from "react";
+import React, { createContext, useContext, useState } from "react";
 import { usersDB } from "../services/dbService";
 
 type User = any | null;
@@ -15,15 +15,15 @@ type AuthContextValue = {
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [user, setUser] = useState<User>(null);
-
-  useEffect(() => {
+  // Initialisation synchrone depuis localStorage pour que la session
+  // soit disponible dès le premier rendu (évite la redirection vers /login
+  // lors d'un rafraîchissement de page).
+  const [user, setUser] = useState<User>(() => {
+    if (typeof window === "undefined") return null;
     const email = localStorage.getItem("current_user_email");
-    if (email) {
-      const found = usersDB.getAll<any>().find((u) => u.email?.toLowerCase() === email.toLowerCase());
-      if (found) setUser(found);
-    }
-  }, []);
+    if (!email) return null;
+    return usersDB.getAll<any>().find((u) => u.email?.toLowerCase() === email.toLowerCase()) || null;
+  });
 
   const login = async (email: string, password: string) => {
     return new Promise<{ ok: boolean; message?: string; user?: User }>((resolve) => {

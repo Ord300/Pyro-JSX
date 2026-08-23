@@ -70,6 +70,12 @@
       "namedRegex": "^/admin/equipment(?:/)?$"
     },
     {
+      "page": "/admin/gallery",
+      "regex": "^/admin/gallery(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/admin/gallery(?:/)?$"
+    },
+    {
       "page": "/admin/messages",
       "regex": "^/admin/messages(?:/)?$",
       "routeKeys": {},

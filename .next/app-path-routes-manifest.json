@@ -9,6 +9,7 @@
   "/_not-found/page": "/_not-found",
   "/admin/activities/page": "/admin/activities",
   "/admin/equipment/page": "/admin/equipment",
+  "/admin/gallery/page": "/admin/gallery",
   "/admin/messages/page": "/admin/messages",
   "/admin/notifications/page": "/admin/notifications",
   "/admin/page": "/admin",

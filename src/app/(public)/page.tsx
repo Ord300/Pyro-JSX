@@ -10,6 +10,7 @@ import { mockTestimonials } from "@/src/data/mockData";
 import { usersDB, placesDB } from "@/src/services/dbService";
 import { useActivities } from "@/src/hooks/queries/activities";
 import { useTrainers } from "@/src/hooks/queries/trainers";
+import { useGallery } from "@/src/hooks/queries/gallery";
 import { useScrollReveal } from "@/src/hooks/useScrollReveal";
 
 // --- Hook compteur animé ---
@@ -41,12 +42,12 @@ function useCounter(target: number, duration = 2000) {
 function StatCard({ icon: Icon, label, value }: { icon: React.ElementType; label: string; value: number }) {
   const { count, ref } = useCounter(value);
   return (
-    <div ref={ref} className="flex flex-col items-center gap-2 p-6">
-      <div className="flex h-14 w-14 items-center justify-center rounded-full bg-white/20 backdrop-blur-sm">
-        <Icon className="h-7 w-7 text-white" />
+    <div ref={ref} className="flex flex-col items-center gap-2 p-3">
+      <div className="flex h-10 w-10 items-center justify-center rounded-full bg-white/20 backdrop-blur-sm">
+        <Icon className="h-5 w-5 text-white" />
       </div>
-      <span className="text-4xl font-extrabold text-white">+{count}</span>
-      <span className="text-sm font-medium text-primary-100">{label}</span>
+      <span className="text-2xl font-extrabold text-white">+{count}</span>
+      <span className="text-xs font-medium text-primary-100">{label}</span>
     </div>
   );
 }
@@ -66,6 +67,7 @@ export default function Home() {
   const [activeTab, setActiveTab] = useState<"monthly" | "yearly">("monthly");
   const { data: activities = [] } = useActivities();
   const { data: trainers = [] } = useTrainers();
+  const { data: galleryImages = [] } = useGallery();
   const [membersCount, setMembersCount] = useState(() => usersDB.getAll().length);
   const [placesCount, setPlacesCount] = useState(() => placesDB.getAll().length);
 
@@ -83,21 +85,16 @@ export default function Home() {
   return (
     <div className="min-h-screen">
       {/* ── HERO ── */}
-      <section className="relative overflow-hidden bg-gradient-to-br from-primary-900 via-primary-700 to-primary-500 px-6 py-28 sm:py-36 lg:px-8">
+      <section className="relative overflow-hidden bg-gradient-to-br from-primary-900 via-primary-700 to-primary-500 px-6 h-screen/3">
         <div className="absolute inset-0 opacity-15" style={{ backgroundImage: "url(\"data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='1'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E\")" }} />
         <div className="relative mx-auto max-w-6xl text-center">
-          <Badge className="mb-6 bg-white/20 text-white border-white/30 backdrop-blur-sm text-sm px-4 py-1.5 reveal reveal-visible">
-            Centre Sportif Professionnel
-          </Badge>
           <h1 className="text-5xl font-extrabold tracking-tight text-white sm:text-6xl lg:text-7xl leading-tight reveal">
-            Transformez votre passion
-            <br />
-            <span className="text-primary-200">du sport en performance.</span>
+            <span className="text-primary-200"> en performance.</span>
           </h1>
-          <p className="mx-auto mt-8 max-w-2xl text-lg text-primary-100 leading-relaxed reveal delay-200">
+          <p className="mx-auto max-w-2xl text-lg text-primary-100 leading-relaxed reveal delay-200">
             Un espace sportif moderne pour vous entraîner, réserver vos activités et gérer votre abonnement en toute simplicité.
           </p>
-          <div className="mt-10 flex flex-col sm:flex-row items-center justify-center gap-4 reveal delay-300">
+          <div className="mt-4 flex flex-col sm:flex-row items-center justify-center gap-4 reveal delay-300">
             <Link href="/activities">
               <Button size="lg" className="bg-white text-primary-700 hover:bg-primary-50 font-semibold shadow-lg w-full sm:w-auto">
                 Découvrir les activités <ArrowRight className="ml-2 h-5 w-5" />
@@ -109,7 +106,7 @@ export default function Home() {
               </Button>
             </Link>
           </div>
-          <div className="mt-12 flex justify-center reveal delay-400">
+          <div className="mt-6 flex justify-center reveal delay-400">
             <a href="#stats" className="flex flex-col items-center text-white/60 hover:text-white transition-colors animate-bounce">
               <ChevronDown className="h-6 w-6" />
             </a>
@@ -117,8 +114,31 @@ export default function Home() {
         </div>
       </section>
 
+      {/* ── GALERIE IMAGES ── */}
+      <section className="bg-slate-100 dark:bg-slate-900 py-12 px-6 lg:px-8">
+        <div className="mx-auto max-w-7xl">
+          <div className="text-center mb-10 reveal">
+            <Badge variant="default" className="mb-3 bg-primary-50 text-primary-700 dark:bg-primary-900/30 dark:text-primary-300">Nos installations</Badge>
+            <h2 className="text-4xl font-extrabold text-slate-900 dark:text-white">Découvrez notre centre</h2>
+          </div>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            {galleryImages
+              .filter((img) => img.visible)
+              .sort((a, b) => a.order - b.order)
+              .map((img, index) => (
+                <img
+                  key={img.id}
+                  src={img.image}
+                  alt={img.alt || img.title}
+                  className={`h-40 w-full object-cover rounded-xl shadow-md reveal-scale ${index % 4 === 1 ? "delay-100" : index % 4 === 2 ? "delay-200" : index % 4 === 3 ? "delay-300" : ""} img-zoom`}
+                />
+              ))}
+          </div>
+        </div>
+      </section>
+
       {/* ── STATS ── */}
-      <section id="stats" className="bg-gradient-to-r from-primary-600 to-primary-800">
+      <section id="stats" className="bg-gradient-to-r from-primary-600 to-primary-800 py-6">
         <div className="mx-auto max-w-6xl grid grid-cols-2 sm:grid-cols-4 divide-x divide-white/20 reveal">
           <StatCard icon={Users} label="Membres actifs" value={membersCount} />
           <StatCard icon={Activity} label="Activités proposées" value={activities.length} />
@@ -218,40 +238,20 @@ export default function Home() {
         </div>
       </section>
 
-      {/* ── GALERIE IMAGES ── */}
-      <section className="bg-slate-100 dark:bg-slate-900 py-24 px-6 lg:px-8">
-        <div className="mx-auto max-w-7xl">
-          <div className="text-center mb-14 reveal">
-            <Badge variant="default" className="mb-3 bg-primary-50 text-primary-700 dark:bg-primary-900/30 dark:text-primary-300">Nos installations</Badge>
-            <h2 className="text-4xl font-extrabold text-slate-900 dark:text-white">Découvrez notre centre</h2>
-          </div>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            <img src="https://images.unsplash.com/photo-1517963879433-6ad2b056d712?q=80&w=600&auto=format&fit=crop" alt="Salle de musculation" className="h-48 w-full object-cover rounded-xl shadow-md reveal-scale img-zoom" />
-            <img src="https://images.unsplash.com/photo-1534438327276-14e5300c3a48?q=80&w=600&auto=format&fit=crop" alt="Salle de fitness" className="h-48 w-full object-cover rounded-xl shadow-md reveal-scale delay-100 img-zoom" />
-            <img src="https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?q=80&w=600&auto=format&fit=crop" alt="Entraînement personnel" className="h-48 w-full object-cover rounded-xl shadow-md reveal-scale delay-200 img-zoom" />
-            <img src="https://images.unsplash.com/photo-1517836357463-d25dfeac3438?q=80&w=600&auto=format&fit=crop" alt="Musculation" className="h-48 w-full object-cover rounded-xl shadow-md reveal-scale delay-300 img-zoom" />
-            <img src="https://images.unsplash.com/photo-1571902943202-507ec2618e8f?q=80&w=600&auto=format&fit=crop" alt="Basketball" className="h-48 w-full object-cover rounded-xl shadow-md reveal-scale img-zoom" />
-            <img src="https://images.unsplash.com/photo-1593079831268-3381b0db4a77?q=80&w=600&auto=format&fit=crop" alt="Salle de sport" className="h-48 w-full object-cover rounded-xl shadow-md reveal-scale delay-100 img-zoom" />
-            <img src="https://images.unsplash.com/photo-1546483875-ad9014c88eba?q=80&w=600&auto=format&fit=crop" alt="Cardio" className="h-48 w-full object-cover rounded-xl shadow-md reveal-scale delay-200 img-zoom" />
-            <img src="https://images.unsplash.com/photo-1574680096145-d05b474e2155?q=80&w=600&auto=format&fit=crop" alt="Fitness" className="h-48 w-full object-cover rounded-xl shadow-md reveal-scale delay-300 img-zoom" />
-          </div>
-        </div>
-      </section>
-
       {/* ── TÉMOIGNAGES ── */}
-      <section className="bg-slate-50 dark:bg-slate-950 py-24 px-6 lg:px-8">
+      <section className="bg-slate-50 dark:bg-slate-950 py-20 px-6 lg:px-8">
         <div className="mx-auto max-w-6xl">
-          <div className="text-center mb-14 reveal">
+          <div className="text-center mb-10 reveal">
             <Badge variant="default" className="mb-3 bg-primary-50 text-primary-700 dark:bg-primary-900/30 dark:text-primary-300">Témoignages</Badge>
             <h2 className="text-4xl font-extrabold text-slate-900 dark:text-white">Ce que disent nos membres</h2>
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
             {mockTestimonials.map((t, index) => (
-              <Card key={t.id} className={`p-6 flex flex-col gap-4 border-slate-200 dark:border-slate-800 hover:shadow-md transition-shadow reveal ${index % 4 === 0 ? "delay-100" : index % 4 === 1 ? "delay-200" : index % 4 === 2 ? "delay-300" : "delay-400"}`}>
+              <Card key={t.id} className={`p-5 flex flex-col gap-3 border-slate-200 dark:border-slate-800 hover:shadow-md transition-shadow reveal ${index % 4 === 0 ? "delay-100" : index % 4 === 1 ? "delay-200" : index % 4 === 2 ? "delay-300" : "delay-400"}`}>
                 <Stars rating={t.rating} />
                 <p className="text-sm text-slate-600 dark:text-slate-300 italic leading-relaxed flex-1">"{t.comment}"</p>
                 <div className="flex items-center gap-3 pt-2 border-t border-slate-100 dark:border-slate-800">
-                  <div className="h-10 w-10 rounded-full bg-primary-100 dark:bg-primary-900/30 flex items-center justify-center text-sm font-bold text-primary-600 dark:text-primary-400">
+                  <div className="h-8 w-8 rounded-full bg-primary-100 dark:bg-primary-900/30 flex items-center justify-center text-sm font-bold text-primary-600 dark:text-primary-400">
                     {t.avatar}
                   </div>
                   <div>

@@ -42,8 +42,8 @@ export default function UserReceipts() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white">Mes reçus</h1>
-        <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
+        <h1 className="text-2xl font-bold tracking-tight text-emerald-950 dark:text-emerald-50">Mes reçus</h1>
+        <p className="mt-1 text-sm text-emerald-900/60 dark:text-emerald-200/60">
           Consultez et téléchargez vos reçus de paiement.
         </p>
       </div>
@@ -58,7 +58,7 @@ export default function UserReceipts() {
               className={cn(
                 "rounded-lg px-4 py-2 text-sm font-medium transition-colors",
                 typeFilter === type
-                  ? "bg-primary-600 text-white"
+                  ? "bg-emerald-600 text-white"
                   : "bg-slate-100 text-slate-700 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700"
               )}
             >
@@ -73,7 +73,7 @@ export default function UserReceipts() {
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Rechercher un reçu..."
-            className="w-full rounded-lg border border-slate-300 py-2 pl-10 pr-4 text-sm focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-500 dark:border-slate-600 dark:bg-slate-800 dark:text-white sm:w-64"
+            className="w-full rounded-lg border border-slate-300 py-2 pl-10 pr-4 text-sm focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500 dark:border-slate-600 dark:bg-slate-800 dark:text-white sm:w-64"
           />
         </div>
       </div>
@@ -84,8 +84,8 @@ export default function UserReceipts() {
           <Card key={receipt.id} className="p-5">
             <div className="flex items-start justify-between">
               <div className="flex items-center gap-3">
-                <div className="rounded-lg bg-slate-100 p-3 dark:bg-slate-800">
-                  <FileText className="h-6 w-6 text-primary-600 dark:text-primary-400" />
+                <div className="rounded-lg bg-emerald-50 p-3 dark:bg-emerald-900/20">
+                  <FileText className="h-6 w-6 text-emerald-600 dark:text-emerald-400" />
                 </div>
                 <div>
                   <p className="font-mono text-xs text-slate-500 dark:text-slate-400">{receipt.reference}</p>
@@ -106,7 +106,7 @@ export default function UserReceipts() {
               </div>
               <div className="flex justify-between">
                 <span className="text-slate-500 dark:text-slate-400">Montant</span>
-                <span className="font-bold text-primary-600 dark:text-primary-400">
+                <span className="font-bold text-emerald-600 dark:text-emerald-400">
                   {receipt.amount} {receipt.currency}
                 </span>
               </div>
@@ -197,7 +197,7 @@ export default function UserReceipts() {
                 </div>
                 <div className="mt-4 flex items-center justify-between border-t border-slate-200 pt-3 dark:border-slate-700">
                   <span className="font-semibold text-slate-900 dark:text-white">Total</span>
-                  <span className="text-lg font-bold text-primary-600 dark:text-primary-400">
+                  <span className="text-lg font-bold text-emerald-600 dark:text-emerald-400">
                     {selectedReceipt.amount} {selectedReceipt.currency}
                   </span>
                 </div>

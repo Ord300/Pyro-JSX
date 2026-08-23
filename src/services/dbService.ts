@@ -5,6 +5,8 @@
 // Synchronise les données entre l'admin et le reste du site
 // ============================================================
 
+import { mockActivities, mockTrainers, mockPlaces, mockPricingPlans, mockGalleryImages } from "@/src/data/mockData";
+
 const initialUsers: any[] = [];
 
 const DB_KEYS = {
@@ -22,9 +24,10 @@ const DB_KEYS = {
   receipts: "db_receipts",
   users: "db_users",
   stats: "db_stats",
+  gallery: "db_gallery",
 };
 
-const SEED_VERSION = "3";
+const SEED_VERSION = "6";
 
 const isBrowser = () => typeof window !== "undefined";
 
@@ -35,16 +38,19 @@ const initializeDB = () => {
     localStorage.setItem("db_seed_version", SEED_VERSION);
   }
   if (!localStorage.getItem(DB_KEYS.activities)) {
-    localStorage.setItem(DB_KEYS.activities, "[]");
+    localStorage.setItem(DB_KEYS.activities, JSON.stringify(mockActivities));
   }
   if (!localStorage.getItem(DB_KEYS.trainers)) {
-    localStorage.setItem(DB_KEYS.trainers, "[]");
+    localStorage.setItem(DB_KEYS.trainers, JSON.stringify(mockTrainers));
   }
   if (!localStorage.getItem(DB_KEYS.places)) {
-    localStorage.setItem(DB_KEYS.places, "[]");
+    localStorage.setItem(DB_KEYS.places, JSON.stringify(mockPlaces));
   }
   if (!localStorage.getItem(DB_KEYS.plans)) {
-    localStorage.setItem(DB_KEYS.plans, "[]");
+    localStorage.setItem(DB_KEYS.plans, JSON.stringify(mockPricingPlans));
+  }
+  if (!localStorage.getItem(DB_KEYS.gallery)) {
+    localStorage.setItem(DB_KEYS.gallery, JSON.stringify(mockGalleryImages));
   }
   if (!localStorage.getItem(DB_KEYS.subscriptions)) {
     localStorage.setItem(DB_KEYS.subscriptions, "[]");
@@ -278,6 +284,15 @@ export const usersDB = {
   create: <T = any>(data: any) => db.create<T>(DB_KEYS.users, data),
   update: <T = any>(id: number, data: any) => db.update<T>(DB_KEYS.users, id, data),
   delete: (id: number) => db.delete(DB_KEYS.users, id),
+};
+
+export const galleryDB = {
+  getAll: <T = any>() => db.getAll<T>(DB_KEYS.gallery),
+  getById: <T = any>(id: number) => db.getById<T>(DB_KEYS.gallery, id),
+  create: <T = any>(data: any) => db.create<T>(DB_KEYS.gallery, data),
+  update: <T = any>(id: number, data: any) => db.update<T>(DB_KEYS.gallery, id, data),
+  delete: (id: number) => db.delete(DB_KEYS.gallery, id),
+  setAll: (items: any[]) => db.setAll(DB_KEYS.gallery, items),
 };
 
 export const statsDB = {

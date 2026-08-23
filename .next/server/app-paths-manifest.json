@@ -9,6 +9,7 @@
   "/_not-found/page": "app/_not-found/page.js",
   "/admin/activities/page": "app/admin/activities/page.js",
   "/admin/equipment/page": "app/admin/equipment/page.js",
+  "/admin/gallery/page": "app/admin/gallery/page.js",
   "/admin/messages/page": "app/admin/messages/page.js",
   "/admin/notifications/page": "app/admin/notifications/page.js",
   "/admin/page": "app/admin/page.js",

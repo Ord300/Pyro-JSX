@@ -30,6 +30,7 @@ export default function AdminDashboard() {
     activeSubscriptions: 0,
     expiredSubscriptions: 0,
     pendingRequests: 0,
+    confirmedRequests: 0,
     totalActivities: 0,
     totalTrainers: 0,
     totalReservations: 0,
@@ -61,7 +62,10 @@ export default function AdminDashboard() {
     const totalReservations = reservations.length;
     const totalRevenue = payments.reduce((sum: any, p: any) => sum + (p.total ?? p.amount ?? 0), 0);
 
-    setStats({ totalSubscribers, activeSubscriptions, expiredSubscriptions, pendingRequests: reqs.length, totalActivities, totalTrainers, totalReservations, totalRevenue });
+    const pendingRequests = reqs.filter((r: any) => r.status === "En attente").length;
+    const confirmedRequests = reqs.filter((r: any) => r.status === "Confirmée").length;
+
+    setStats({ totalSubscribers, activeSubscriptions, expiredSubscriptions, pendingRequests, confirmedRequests, totalActivities, totalTrainers, totalReservations, totalRevenue });
     setAllPayments(payments);
     setRecentPayments(payments.slice(-5).reverse());
     setAllReservations(reservations);
@@ -90,10 +94,11 @@ export default function AdminDashboard() {
       </div>
 
       {/* KPI Cards — Ligne 1 */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-5">
+      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-5 gap-5">
         <KPICard title="Total abonnés" value={String(stats.totalSubscribers)} icon={Users} change={12.5} color="blue" />
         <KPICard title="Abonnements actifs" value={String(stats.activeSubscriptions)} icon={CreditCard} change={8.2} color="green" />
         <KPICard title="Abonnements expirés" value={String(stats.expiredSubscriptions)} icon={AlertCircle} change={-3.1} color="red" />
+        <KPICard title="Demande confirmée" value={String(stats.confirmedRequests)} icon={Clock} change={5.0} color="green" />
         <KPICard title="Demandes en attente" value={String(stats.pendingRequests)} icon={Clock} change={5.0} color="amber" />
       </div>
 

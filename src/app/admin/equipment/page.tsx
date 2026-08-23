@@ -1,12 +1,14 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useState, useEffect } from "react";
 import { Minus, Package, Plus, Search, Trash2, Edit2 } from "lucide-react";
 import { Badge } from "@/src/components/ui/Badge";
 import { Button } from "@/src/components/ui/Button";
 import { Card } from "@/src/components/ui/Card";
 import { Input } from "@/src/components/ui/Input";
 import { Modal } from "@/src/components/ui/Modal";
+import { productsDB } from "@/src/services/dbService";
+import { DB_KEYS_EXPORT } from "@/src/services/dbService";
 
 type Equipment = { id: number; name: string; category: string; price: number; stock: number; image?: string };
 
@@ -20,31 +22,55 @@ const initialEquipment: Equipment[] = [
 ];
 
 export default function AdminEquipment() {
-  const [equipment, setEquipment] = useState(initialEquipment);
   const [search, setSearch] = useState("");
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [editItem, setEditItem] = useState<Equipment | null>(null);
   const [form, setForm] = useState({ name: "", category: "", price: "", stock: "", image: "" });
+  const [equipment, setEquipment] = useState<any[]>([]);
+
+  useEffect(() => {
+    setEquipment(productsDB.getAll<Equipment>());
+    const onChange = () => setEquipment(productsDB.getAll<Equipment>());
+    window.addEventListener("db-change", onChange as any);
+    return () => window.removeEventListener("db-change", onChange as any);
+  }, []);
 
   const filtered = useMemo(
     () => equipment.filter((item) => item.name.toLowerCase().includes(search.toLowerCase()) || item.category.toLowerCase().includes(search.toLowerCase())),
     [equipment, search]
   );
 
-  const increaseStock = (id: number, amount = 1) => setEquipment((items) => items.map((i) => (i.id === id ? { ...i, stock: i.stock + amount } : i)));
-  const decreaseStock = (id: number, amount = 1) => setEquipment((items) => items.map((i) => (i.id === id ? { ...i, stock: Math.max(0, i.stock - amount) } : i)));
-  const removeEquipment = (id: number) => { if (!confirm("Supprimer cet équipement ?")) return; setEquipment((items) => items.filter((i) => i.id !== id)); };
+  const increaseStock = (id: number, amount = 1) => {
+    const item = equipment.find((i: any) => i.id === id);
+    if (!item) return;
+    const newStock = Math.max(0, (item.stock || 0) + amount);
+    productsDB.update(id, { stock: newStock });
+    setEquipment((eq) => eq.map((i: any) => i.id === id ? { ...i, stock: newStock } : i));
+  };
+  const decreaseStock = (id: number, amount = 1) => {
+    const item = equipment.find((i: any) => i.id === id);
+    if (!item) return;
+    const newStock = Math.max(0, (item.stock || 0) - amount);
+    productsDB.update(id, { stock: newStock });
+    setEquipment((eq) => eq.map((i: any) => i.id === id ? { ...i, stock: newStock } : i));
+  };
+  const removeEquipment = (id: number) => {
+    productsDB.delete(id);
+    setEquipment((eq) => eq.filter((i: any) => i.id !== id));
+  };
 
   const openCreate = () => { setEditItem(null); setForm({ name: "", category: "", price: "", stock: "", image: "" }); setIsCreateOpen(true); };
   const openEdit = (item: Equipment) => { setEditItem(item); setForm({ name: item.name, category: item.category, price: String(item.price), stock: String(item.stock), image: item.image || "" }); setIsCreateOpen(true); };
 
   const submitForm = () => {
     if (!form.name.trim() || !form.category.trim() || Number(form.price) <= 0 || Number(form.stock) < 0) return;
+    const newItem: Equipment = { id: Date.now(), name: form.name.trim(), category: form.category.trim(), price: Number(form.price), stock: Number(form.stock), image: form.image || undefined };
     if (editItem) {
-      setEquipment((items) => items.map((i) => (i.id === editItem.id ? { ...i, name: form.name.trim(), category: form.category.trim(), price: Number(form.price), stock: Number(form.stock), image: form.image || undefined } : i)));
+      setEquipment((eq) => eq.map((i: any) => i.id === editItem.id ? newItem : i));
     } else {
-      setEquipment((current) => [...current, { id: Date.now(), name: form.name.trim(), category: form.category.trim(), price: Number(form.price), stock: Number(form.stock), image: form.image || undefined }]);
+      setEquipment((current) => [...current, newItem]);
     }
+    productsDB.create(newItem);
     setIsCreateOpen(false);
     setEditItem(null);
   };

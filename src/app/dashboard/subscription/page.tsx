@@ -50,8 +50,8 @@ export default function UserSubscription() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white">Mon abonnement</h1>
-          <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
+          <h1 className="text-2xl font-bold tracking-tight text-emerald-950 dark:text-emerald-50">Mon abonnement</h1>
+          <p className="mt-1 text-sm text-emerald-900/60 dark:text-emerald-200/60">
             Gérez votre abonnement et votre carte virtuelle.
           </p>
         </div>
@@ -71,7 +71,7 @@ export default function UserSubscription() {
         <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
           {/* Virtual Card */}
           <div className="lg:col-span-2">
-            <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-primary-600 via-primary-700 to-primary-900 p-8 text-white shadow-lg">
+            <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-emerald-600 via-emerald-700 to-teal-900 p-8 text-white shadow-lg">
               <div className="absolute -right-8 -top-8 h-40 w-40 rounded-full bg-white/10" />
               <div className="absolute -bottom-16 -right-16 h-56 w-56 rounded-full bg-white/5" />
 

@@ -14,7 +14,8 @@ import {
   Settings,
   Activity,
   MapPin,
-  Box
+  Box,
+  Image
 } from "lucide-react";
 import { cn } from "@/src/utils/cn";
 
@@ -38,6 +39,7 @@ const menuGroups = [
       { name: "Entraîneurs", path: "/admin/trainers", icon: Dumbbell },
       { name: "Lieux", path: "/admin/places", icon: MapPin },
       { name: "Équipements", path: "/admin/equipment", icon: Box },
+      { name: "Galerie", path: "/admin/gallery", icon: Image },
     ]
   },
   {
