@@ -28,26 +28,24 @@ export function KPICard({ title, value, icon: Icon, change, changeLabel = "vs mo
   const isPositive = (change ?? 0) >= 0;
 
   return (
-    <div className="rounded-xl border border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-900 p-6 flex flex-col gap-4 shadow-sm hover:shadow-md transition-shadow">
-      <div className="flex items-center justify-between">
-        <p className="text-sm font-medium text-slate-500 dark:text-slate-400">{title}</p>
-        <div className={cn("flex h-10 w-10 items-center justify-center rounded-lg", c.iconBg)}>
-          <Icon className={cn("h-5 w-5", c.icon)} />
-        </div>
-      </div>
-      <div>
-        <p className="text-3xl font-extrabold text-slate-900 dark:text-white">{value}</p>
+    <div className={cn("rounded-xl border border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-900 p-4 flex items-center justify-between gap-3 shadow-sm hover:shadow-md transition-all duration-300 hover:-translate-y-0.5")}>
+      <div className="min-w-0">
+        <p className="truncate text-xs font-medium text-slate-500 dark:text-slate-400">{title}</p>
+        <p className="mt-1 text-xl font-extrabold leading-tight text-slate-900 dark:text-white">{value}</p>
         {change !== undefined && (
-          <div className="mt-2 flex items-center gap-1.5">
+          <div className="mt-1 flex items-center gap-1">
             {isPositive
-              ? <TrendingUp className="h-4 w-4 text-green-500" />
-              : <TrendingDown className="h-4 w-4 text-red-500" />}
-            <span className={cn("text-sm font-semibold", isPositive ? "text-green-600 dark:text-green-400" : "text-red-600 dark:text-red-400")}>
+              ? <TrendingUp className="h-3 w-3 text-green-500" />
+              : <TrendingDown className="h-3 w-3 text-red-500" />}
+            <span className={cn("text-xs font-semibold", isPositive ? "text-green-600 dark:text-green-400" : "text-red-600 dark:text-red-400")}>
               {isPositive ? "+" : ""}{change}%
             </span>
-            <span className="text-xs text-slate-400">{changeLabel}</span>
+            <span className="hidden text-[11px] text-slate-400 xl:inline">{changeLabel}</span>
           </div>
         )}
+      </div>
+      <div className={cn("flex h-9 w-9 shrink-0 items-center justify-center rounded-lg", c.iconBg)}>
+        <Icon className={cn("h-4 w-4", c.icon)} />
       </div>
     </div>
   );

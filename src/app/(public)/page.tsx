@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
-import { ArrowRight, Dumbbell, Users, Activity, MapPin, Star, ChevronDown } from "lucide-react";
+import { ArrowRight, Dumbbell, Star, ChevronDown, Sparkles } from "lucide-react";
 import { Button } from "@/src/components/ui/Button";
 import { Badge } from "@/src/components/ui/Badge";
 import { Card, CardContent } from "@/src/components/ui/Card";
@@ -12,42 +12,16 @@ import { useActivities } from "@/src/hooks/queries/activities";
 import { useTrainers } from "@/src/hooks/queries/trainers";
 import { useGallery } from "@/src/hooks/queries/gallery";
 import { useScrollReveal } from "@/src/hooks/useScrollReveal";
+import { useCounter } from "@/src/hooks/useCounter";
 
-// --- Hook compteur animé ---
-function useCounter(target: number, duration = 2000) {
-  const [count, setCount] = useState(0);
-  const ref = useRef<HTMLDivElement>(null);
-  const started = useRef(false);
-  useEffect(() => {
-    const observer = new IntersectionObserver(([entry]) => {
-      if (entry.isIntersecting && !started.current) {
-        started.current = true;
-        const start = Date.now();
-        const tick = () => {
-          const elapsed = Date.now() - start;
-          const progress = Math.min(elapsed / duration, 1);
-          setCount(Math.floor(progress * target));
-          if (progress < 1) requestAnimationFrame(tick);
-        };
-        requestAnimationFrame(tick);
-      }
-    });
-    if (ref.current) observer.observe(ref.current);
-    return () => observer.disconnect();
-  }, [target, duration]);
-  return { count, ref };
-}
-
-// --- Composant Stat ---
-function StatCard({ icon: Icon, label, value }: { icon: React.ElementType; label: string; value: number }) {
+// --- Composant Stat (design similaire à la page À propos) ---
+function StatCard({ label, value, index }: { label: string; value: number; index: number }) {
   const { count, ref } = useCounter(value);
+  const delays = ["", "delay-100", "delay-200", "delay-300"];
   return (
-    <div ref={ref} className="flex flex-col items-center gap-2 p-3">
-      <div className="flex h-10 w-10 items-center justify-center rounded-full bg-white/20 backdrop-blur-sm">
-        <Icon className="h-5 w-5 text-white" />
-      </div>
-      <span className="text-2xl font-extrabold text-white">+{count}</span>
-      <span className="text-xs font-medium text-primary-100">{label}</span>
+    <div ref={ref} className={`reveal bg-primary-50 dark:bg-primary-900/20 p-6 rounded-xl text-center ${delays[index % 4]}`}>
+      <p className="text-3xl font-extrabold text-primary-600 dark:text-primary-400">+{count}</p>
+      <p className="text-sm text-slate-600 dark:text-slate-400 mt-1">{label}</p>
     </div>
   );
 }
@@ -63,33 +37,76 @@ function Stars({ rating }: { rating: number }) {
   );
 }
 
+const HERO_IMAGES = [
+  "https://images.unsplash.com/photo-1534438327276-14e5300c3a48?q=80&w=1600&auto=format&fit=crop",
+  "https://images.unsplash.com/photo-1517836357463-d25dfeac3438?q=80&w=1600&auto=format&fit=crop",
+  "https://images.unsplash.com/photo-1571902943202-507ec2618e8f?q=80&w=1600&auto=format&fit=crop",
+  "https://images.unsplash.com/photo-1593079831268-3381b0db4a77?q=80&w=1600&auto=format&fit=crop",
+  "https://images.unsplash.com/photo-1546483875-ad9014c88eba?q=80&w=1600&auto=format&fit=crop",
+  "https://images.unsplash.com/photo-1574680096145-d05b474e2155?q=80&w=1600&auto=format&fit=crop",
+];
+
 export default function Home() {
   const [activeTab, setActiveTab] = useState<"monthly" | "yearly">("monthly");
+  const [heroSlide, setHeroSlide] = useState(0);
   const { data: activities = [] } = useActivities();
   const { data: trainers = [] } = useTrainers();
   const { data: galleryImages = [] } = useGallery();
-  const [membersCount, setMembersCount] = useState(() => usersDB.getAll().length);
-  const [placesCount, setPlacesCount] = useState(() => placesDB.getAll().length);
+  const [membersCount, setMembersCount] = useState(0);
+  const [placesCount, setPlacesCount] = useState(0);
 
   useScrollReveal();
 
   useEffect(() => {
-    const onChange = () => {
-      setMembersCount(usersDB.getAll().length);
-      setPlacesCount(placesDB.getAll().length);
+    const refresh = async () => {
+      const [users, places] = await Promise.all([usersDB.getAll(), placesDB.getAll()]);
+      setMembersCount(users.length);
+      setPlacesCount(places.length);
     };
+    refresh();
+    const onChange = () => refresh();
     window.addEventListener("db-change", onChange as any);
     return () => window.removeEventListener("db-change", onChange as any);
+  }, []);
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setHeroSlide((prev) => (prev + 1) % HERO_IMAGES.length);
+    }, 5000);
+    return () => clearInterval(timer);
   }, []);
 
   return (
     <div className="min-h-screen">
       {/* ── HERO ── */}
-      <section className="relative overflow-hidden bg-gradient-to-br from-primary-900 via-primary-700 to-primary-500 px-6 h-screen/3">
-        <div className="absolute inset-0 opacity-15" style={{ backgroundImage: "url(\"data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='1'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E\")" }} />
-        <div className="relative mx-auto max-w-6xl text-center">
-          <h1 className="text-5xl font-extrabold tracking-tight text-white sm:text-6xl lg:text-7xl leading-tight reveal">
-            <span className="text-primary-200"> en performance.</span>
+      <section className="relative flex min-h-[50vh] items-center justify-center overflow-hidden bg-primary-950 px-6 py-10">
+        {/* Images des installations qui défilent en arrière-plan */}
+        {HERO_IMAGES.map((img, i) => (
+          <div
+            key={i}
+            className={`absolute inset-0 transition-opacity duration-[2000ms] ease-in-out ${i === heroSlide ? "opacity-100" : "opacity-0"}`}
+          >
+            <img
+              src={img}
+              alt={`Installation sportive ${i + 1}`}
+              className={`h-full w-full object-cover ${i === heroSlide ? "animate-[hero-zoom_8s_ease-out_forwards]" : ""}`}
+            />
+          </div>
+        ))}
+        {/* Overlays pour la lisibilité du texte */}
+        <div className="absolute inset-0 bg-gradient-to-br from-primary-950/95 via-primary-900/80 to-primary-700/60" />
+        <div className="absolute inset-0 opacity-10" style={{ backgroundImage: "url(\"data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='1'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E\")" }} />
+
+        <div className="relative z-10 mx-auto max-w-6xl text-center">
+          {/* Petit titre accrocheur */}
+          <span className="mb-6 inline-flex items-center gap-2 rounded-full border border-white/25 bg-white/10 px-5 py-2 text-sm font-semibold text-white shadow-lg backdrop-blur-sm reveal">
+            <Sparkles className="h-4 w-4 text-primary-200" />
+            Le sport qui change tout — rejoignez le n°1 de la ville
+          </span>
+          <h1 className="text-4xl font-extrabold tracking-tight text-white sm:text-5xl lg:text-6xl leading-tight reveal">
+            Dépassez vos limites,
+            <br />
+            <span className="text-primary-200">excellez en performance.</span>
           </h1>
           <p className="mx-auto max-w-2xl text-lg text-primary-100 leading-relaxed reveal delay-200">
             Un espace sportif moderne pour vous entraîner, réserver vos activités et gérer votre abonnement en toute simplicité.
@@ -114,36 +131,13 @@ export default function Home() {
         </div>
       </section>
 
-      {/* ── GALERIE IMAGES ── */}
-      <section className="bg-slate-100 dark:bg-slate-900 py-12 px-6 lg:px-8">
-        <div className="mx-auto max-w-7xl">
-          <div className="text-center mb-10 reveal">
-            <Badge variant="default" className="mb-3 bg-primary-50 text-primary-700 dark:bg-primary-900/30 dark:text-primary-300">Nos installations</Badge>
-            <h2 className="text-4xl font-extrabold text-slate-900 dark:text-white">Découvrez notre centre</h2>
-          </div>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            {galleryImages
-              .filter((img) => img.visible)
-              .sort((a, b) => a.order - b.order)
-              .map((img, index) => (
-                <img
-                  key={img.id}
-                  src={img.image}
-                  alt={img.alt || img.title}
-                  className={`h-40 w-full object-cover rounded-xl shadow-md reveal-scale ${index % 4 === 1 ? "delay-100" : index % 4 === 2 ? "delay-200" : index % 4 === 3 ? "delay-300" : ""} img-zoom`}
-                />
-              ))}
-          </div>
-        </div>
-      </section>
-
       {/* ── STATS ── */}
-      <section id="stats" className="bg-gradient-to-r from-primary-600 to-primary-800 py-6">
-        <div className="mx-auto max-w-6xl grid grid-cols-2 sm:grid-cols-4 divide-x divide-white/20 reveal">
-          <StatCard icon={Users} label="Membres actifs" value={membersCount} />
-          <StatCard icon={Activity} label="Activités proposées" value={activities.length} />
-          <StatCard icon={Dumbbell} label="Entraîneurs experts" value={trainers.length} />
-          <StatCard icon={MapPin} label="Espaces sportifs" value={placesCount} />
+      <section id="stats" className="bg-background dark:bg-dark-background py-16 px-6 lg:px-8">
+        <div className="mx-auto max-w-6xl grid grid-cols-2 lg:grid-cols-4 gap-6">
+          <StatCard index={0} label="Membres actifs" value={membersCount} />
+          <StatCard index={1} label="Activités proposées" value={activities.length} />
+          <StatCard index={2} label="Entraîneurs experts" value={trainers.length} />
+          <StatCard index={3} label="Espaces sportifs" value={placesCount} />
         </div>
       </section>
 
@@ -234,6 +228,29 @@ export default function Home() {
           </div>
           <div className="mt-10 text-center reveal">
             <Link href="/register"><Button size="lg" variant="outline">Rencontrer toute l'équipe</Button></Link>
+          </div>
+        </div>
+      </section>
+
+      {/* ── GALERIE IMAGES ── */}
+      <section className="bg-slate-100 dark:bg-slate-900 py-12 px-6 lg:px-8">
+        <div className="mx-auto max-w-7xl">
+          <div className="text-center mb-10 reveal">
+            <Badge variant="default" className="mb-3 bg-primary-50 text-primary-700 dark:bg-primary-900/30 dark:text-primary-300">Nos installations</Badge>
+            <h2 className="text-4xl font-extrabold text-slate-900 dark:text-white">Découvrez notre centre</h2>
+          </div>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            {galleryImages
+              .filter((img) => img.visible)
+              .sort((a, b) => a.order - b.order)
+              .map((img, index) => (
+                <img
+                  key={img.id}
+                  src={img.image}
+                  alt={img.alt || img.title}
+                  className={`h-40 w-full object-cover rounded-xl shadow-md reveal-scale ${index % 4 === 1 ? "delay-100" : index % 4 === 2 ? "delay-200" : index % 4 === 3 ? "delay-300" : ""} img-zoom`}
+                />
+              ))}
           </div>
         </div>
       </section>

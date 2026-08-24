@@ -9,7 +9,7 @@ export function Footer() {
           <div className="col-span-1 md:col-span-1">
             <Link href="/" className="flex items-center gap-2 mb-4">
               <Dumbbell className="h-8 w-8 text-primary-600 dark:text-primary-500" />
-              <span className="text-xl font-bold tracking-tight text-slate-900 dark:text-white">SPORT CENTER</span>
+              <span className="text-xl font-bold tracking-tight text-slate-900 dark:text-white">MoveUp</span>
             </Link>
             <p className="text-sm text-slate-500 dark:text-slate-400">
               Votre plateforme complète pour gérer vos activités sportives et abonnements en toute simplicité.
@@ -58,7 +58,7 @@ export function Footer() {
         </div>
         <div className="mt-8 border-t border-slate-200 dark:border-slate-800 pt-8 flex items-center justify-between">
           <p className="text-sm text-slate-400">
-            &copy; {new Date().getFullYear()} Sport Center. Tous droits réservés.
+            &copy; {new Date().getFullYear()} MoveUp. Tous droits réservés.
           </p>
         </div>
       </div>

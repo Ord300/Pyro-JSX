@@ -72,7 +72,7 @@ export default function Login() {
           <div className="lg:hidden text-center mb-8">
             <Link href="/" className="inline-flex items-center gap-2 mb-4">
               <Dumbbell className="h-8 w-8 text-primary-600 dark:text-primary-400" />
-              <span className="text-xl font-bold tracking-tight text-slate-900 dark:text-white">SPORT CENTER</span>
+              <span className="text-xl font-bold tracking-tight text-slate-900 dark:text-white">MoveUp</span>
             </Link>
             <h1 className="text-3xl font-extrabold text-slate-900 dark:text-white">Bon retour parmi nous !</h1>
             <p className="mt-2 text-slate-500 dark:text-slate-400">Connectez-vous pour accéder à votre espace.</p>
@@ -142,7 +142,7 @@ export default function Login() {
           <div className="flex items-center justify-between">
             <Link href="/" className="inline-flex items-center gap-2 text-white">
               <Dumbbell className="h-9 w-9" />
-              <span className="text-2xl font-extrabold tracking-tight">SPORT CENTER</span>
+              <span className="text-2xl font-extrabold tracking-tight">MoveUp</span>
             </Link>
             <Link href="/" className="inline-flex items-center gap-1.5 text-sm text-white/80 hover:text-white transition-colors">
               <ArrowLeft className="h-4 w-4" />

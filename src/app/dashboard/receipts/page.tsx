@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Card } from "@/src/components/ui/Card";
 import { Badge } from "@/src/components/ui/Badge";
 import { Button } from "@/src/components/ui/Button";
@@ -10,11 +10,20 @@ import type { Receipt } from "@/src/types/receipt";
 import { FileText, Download, Search, X, Printer } from "lucide-react";
 
 export default function UserReceipts() {
-  const email = localStorage.getItem("current_user_email") || "";
-  const receipts = receiptsDB.getAll<any>().filter((receipt) => receipt.email?.toLowerCase() === email);
+  const [receipts, setReceipts] = useState<any[]>([]);
   const [search, setSearch] = useState("");
   const [typeFilter, setTypeFilter] = useState<string>("all");
   const [selectedReceipt, setSelectedReceipt] = useState<Receipt | null>(null);
+
+  useEffect(() => {
+    const load = async () => {
+      const email = localStorage.getItem("current_user_email") || "";
+      const allReceipts = await receiptsDB.getAll<any>();
+      setReceipts(allReceipts.filter((receipt) => receipt.email?.toLowerCase() === email));
+    };
+    load();
+    return receiptsDB.subscribe(() => load());
+  }, []);
 
   const filteredReceipts = receipts.filter((receipt) => {
     if (typeFilter !== "all" && receipt.type !== typeFilter) return false;
@@ -159,7 +168,7 @@ export default function UserReceipts() {
               <div className="rounded-lg border border-slate-200 p-4 dark:border-slate-700">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm font-semibold text-slate-900 dark:text-white">Centre Sportif</p>
+                    <p className="text-sm font-semibold text-slate-900 dark:text-white">MoveUp</p>
                     <p className="text-xs text-slate-500 dark:text-slate-400">Kinshasa, RDC</p>
                   </div>
                   <Badge variant={getStatusVariant(selectedReceipt.status)}>{selectedReceipt.status}</Badge>

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { CheckCircle, XCircle, Eye, Search } from "lucide-react";
 import { Button } from "@/src/components/ui/Button";
 import { Input } from "@/src/components/ui/Input";
@@ -19,23 +19,31 @@ interface Request {
 const statusVariant = (s: ReqStatus) => (s === "Confirmée" ? "success" : s === "Refusée" ? "danger" : "warning");
 
 export default function AdminRequests() {
-  const [requests, setRequests] = useState<Request[]>(() =>
-    subscriptionFlow.requests()
-      .filter((request) => request.subject === "Demande d'abonnement" || (request.subject && request.subject.toLowerCase().includes("abonnement")))
-      .map((request) => ({ id: String(request.id), name: request.name, email: request.email, phone: request.phone, subject: request.subject || "Demande d'abonnement", date: (request.createdAt || "").slice(0, 10), status: request.status, message: request.description || "" }))
-  );
+  const [requests, setRequests] = useState<Request[]>([]);
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("Tous");
   const [selected, setSelected] = useState<Request | null>(null);
+
+  useEffect(() => {
+    const load = async () => {
+      const all = await subscriptionFlow.requests();
+      setRequests(
+        all
+          .filter((request) => request.subject === "Demande d'abonnement" || (request.subject && request.subject.toLowerCase().includes("abonnement")))
+          .map((request) => ({ id: String(request.id), name: request.name, email: request.email, phone: request.phone, subject: request.subject || "Demande d'abonnement", date: (request.createdAt || "").slice(0, 10), status: request.status, message: request.description || "" }))
+      );
+    };
+    load();
+  }, []);
 
   const filtered = requests.filter((r) =>
     (statusFilter === "Tous" || r.status === statusFilter) &&
     (r.name.toLowerCase().includes(search.toLowerCase()) || r.email.toLowerCase().includes(search.toLowerCase()))
   );
 
-  const updateStatus = (id: string, status: ReqStatus) => {
+  const updateStatus = async (id: string, status: ReqStatus) => {
     setRequests((prev) => prev.map((r) => (r.id === id ? { ...r, status } : r)));
-    subscriptionFlow.setRequestStatus(Number(id), status as any);
+    await subscriptionFlow.setRequestStatus(Number(id), status as any);
     setSelected(null);
   };
 

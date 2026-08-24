@@ -4,7 +4,6 @@ import { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Dumbbell, Menu, X } from "lucide-react";
-import { ThemeToggle } from "./ThemeToggle";
 import { Button } from "../ui/Button";
 import { cn } from "@/src/utils/cn";
 
@@ -12,8 +11,8 @@ const navLinks = [
   { name: "Accueil", path: "/" },
   { name: "À propos", path: "/about" },
   { name: "Activités", path: "/activities" },
+  { name: "Boutique", path: "/equipements" },
   { name: "Vérification", path: "/verification" },
-  { name: "Nos équipements", path: "/equipements" },
 ];
 
 export function PublicNavbar() {
@@ -26,7 +25,7 @@ export function PublicNavbar() {
         <div className="flex items-center">
           <Link href="/" className="flex items-center gap-2">
             <Dumbbell className="h-8 w-8 text-primary-600 dark:text-primary-500" />
-            <span className="text-xl font-bold tracking-tight text-slate-900 dark:text-white">SPORT CENTER</span>
+            <span className="text-xl font-bold tracking-tight text-slate-900 dark:text-white">MoveUp</span>
           </Link>
         </div>
 
@@ -47,7 +46,6 @@ export function PublicNavbar() {
         </nav>
 
         <div className="hidden md:flex items-center gap-4">
-          <ThemeToggle />
           <Link href="/login">
             <Button variant="ghost">Connexion</Button>
           </Link>
@@ -58,7 +56,6 @@ export function PublicNavbar() {
 
         {/* Mobile Menu Button */}
         <div className="flex md:hidden items-center gap-2">
-          <ThemeToggle />
           <Button variant="ghost" size="icon" onClick={() => setIsOpen(!isOpen)}>
             {isOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
           </Button>

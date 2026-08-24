@@ -9,7 +9,7 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: "SPORT CENTER",
+  title: "MoveUp",
   description: "Votre plateforme complète pour gérer vos activités sportives et abonnements en toute simplicité.",
 };
 

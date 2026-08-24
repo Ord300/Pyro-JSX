@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Card } from "@/src/components/ui/Card";
 import { Badge } from "@/src/components/ui/Badge";
 import { Button } from "@/src/components/ui/Button";
@@ -16,11 +16,26 @@ export default function AdminReports() {
   const [reportType, setReportType] = useState<ReportType>("revenue");
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
+  const [payments, setPayments] = useState<any[]>([]);
+  const [subscriptions, setSubscriptions] = useState<any[]>([]);
+  const [reservations, setReservations] = useState<any[]>([]);
+  const [users, setUsers] = useState<any[]>([]);
 
-  const payments = paymentsDB.getAll<any>();
-  const subscriptions = subscriptionsDB.getAll<any>();
-  const reservations = reservationsDB.getAll<any>();
-  const users = usersDB.getAll<any>();
+  useEffect(() => {
+    const load = async () => {
+      const [p, s, r, u] = await Promise.all([
+        paymentsDB.getAll<any>(),
+        subscriptionsDB.getAll<any>(),
+        reservationsDB.getAll<any>(),
+        usersDB.getAll<any>(),
+      ]);
+      setPayments(p);
+      setSubscriptions(s);
+      setReservations(r);
+      setUsers(u);
+    };
+    load();
+  }, []);
 
   const totalRevenue = payments
     .filter((p) => p.status === "Réussi")

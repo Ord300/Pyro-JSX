@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Card } from "@/src/components/ui/Card";
 import { Button } from "@/src/components/ui/Button";
 import { Badge } from "@/src/components/ui/Badge";
@@ -8,17 +8,35 @@ import { Mail, Phone, MapPin, Save, Camera, Shield } from "lucide-react";
 import { usersDB } from "@/src/services/dbService";
 
 export default function UserProfile() {
-  const email = localStorage.getItem("current_user_email") || "";
-  const user = usersDB.getAll<any>().find((item) => item.email.toLowerCase() === email);
+  const [user, setUser] = useState<any | null>(null);
   const [formData, setFormData] = useState({
-    name: user?.name || "",
-    email: user?.email || "",
-    phone: user?.phone || "",
+    name: "",
+    email: "",
+    phone: "",
     address: "Kinshasa, RDC",
     birthDate: "1990-05-15",
     emergencyContact: "+243 823 456 789",
   });
   const [saved, setSaved] = useState(false);
+
+  useEffect(() => {
+    const load = async () => {
+      const email = localStorage.getItem("current_user_email") || "";
+      if (!email) return;
+      const users = await usersDB.getAll<any>();
+      const found = users.find((item) => item.email.toLowerCase() === email) || null;
+      setUser(found);
+      if (found) {
+        setFormData((prev) => ({
+          ...prev,
+          name: found.name || "",
+          email: found.email || "",
+          phone: found.phone || "",
+        }));
+      }
+    };
+    load();
+  }, []);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -26,9 +44,9 @@ export default function UserProfile() {
     setSaved(false);
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (user) usersDB.update(user.id, { name: formData.name, phone: formData.phone });
+    if (user) await usersDB.update(user.id, { name: formData.name, phone: formData.phone });
     setSaved(true);
     setTimeout(() => setSaved(false), 3000);
   };

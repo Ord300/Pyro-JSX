@@ -13,14 +13,15 @@ export default function ChangePassword() {
   const [password, setPassword] = useState("");
   const [confirm, setConfirm] = useState("");
   const [error, setError] = useState("");
-  const submit = (event: React.FormEvent) => {
+  const submit = async (event: React.FormEvent) => {
     event.preventDefault();
     if (password.length < 8) return setError("Le mot de passe doit contenir au moins 8 caractères.");
     if (password !== confirm) return setError("Les mots de passe ne correspondent pas.");
     const email = localStorage.getItem("current_user_email");
-    const user = email && usersDB.getAll<any>().find((item) => item.email.toLowerCase() === email);
+    const users = await usersDB.getAll<any>();
+    const user = email && users.find((item) => item.email.toLowerCase() === email);
     if (!user) return router.push("/login");
-    usersDB.update(user.id, { password, mustChangePassword: false });
+    await usersDB.update(user.id, { password, mustChangePassword: false });
     router.push("/dashboard");
   };
   return (

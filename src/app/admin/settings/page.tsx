@@ -10,7 +10,7 @@ type Settings = { siteName: string; contactEmail: string; currency: string };
 const STORAGE_KEY = "admin_settings";
 
 export default function AdminSettings() {
-  const [settings, setSettings] = useState<Settings>({ siteName: "SPORT CENTER", contactEmail: "", currency: "USD" });
+  const [settings, setSettings] = useState<Settings>({ siteName: "MoveUp", contactEmail: "", currency: "USD" });
 
   useEffect(() => {
     try {

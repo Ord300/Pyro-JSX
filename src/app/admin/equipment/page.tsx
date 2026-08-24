@@ -8,20 +8,12 @@ import { Card } from "@/src/components/ui/Card";
 import { Input } from "@/src/components/ui/Input";
 import { Modal } from "@/src/components/ui/Modal";
 import { productsDB } from "@/src/services/dbService";
-import { DB_KEYS_EXPORT } from "@/src/services/dbService";
+import { useToast } from "@/src/contexts/ToastContext";
 
 type Equipment = { id: number; name: string; category: string; price: number; stock: number; image?: string };
 
-const initialEquipment: Equipment[] = [
-  { id: 1, name: "Ballon de football", category: "Sports collectifs", price: 25, stock: 18 },
-  { id: 2, name: "Tapis de yoga", category: "Fitness", price: 18, stock: 9 },
-  { id: 3, name: "Gants de boxe", category: "Combat", price: 35, stock: 6 },
-  { id: 4, name: "Bouteille isotherme", category: "Accessoires", price: 12, stock: 24 },
-  { id: 5, name: "Corde à sauter", category: "Fitness", price: 10, stock: 3 },
-  { id: 6, name: "Serviette sport", category: "Accessoires", price: 8, stock: 15 },
-];
-
 export default function AdminEquipment() {
+  const toast = useToast();
   const [search, setSearch] = useState("");
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [editItem, setEditItem] = useState<Equipment | null>(null);
@@ -29,10 +21,9 @@ export default function AdminEquipment() {
   const [equipment, setEquipment] = useState<any[]>([]);
 
   useEffect(() => {
-    setEquipment(productsDB.getAll<Equipment>());
-    const onChange = () => setEquipment(productsDB.getAll<Equipment>());
-    window.addEventListener("db-change", onChange as any);
-    return () => window.removeEventListener("db-change", onChange as any);
+    const load = async () => setEquipment(await productsDB.getAll<Equipment>());
+    load();
+    return productsDB.subscribe(() => load());
   }, []);
 
   const filtered = useMemo(
@@ -40,39 +31,43 @@ export default function AdminEquipment() {
     [equipment, search]
   );
 
-  const increaseStock = (id: number, amount = 1) => {
+  const increaseStock = async (id: number, amount = 1) => {
     const item = equipment.find((i: any) => i.id === id);
     if (!item) return;
     const newStock = Math.max(0, (item.stock || 0) + amount);
-    productsDB.update(id, { stock: newStock });
+    await productsDB.update(id, { stock: newStock });
     setEquipment((eq) => eq.map((i: any) => i.id === id ? { ...i, stock: newStock } : i));
   };
-  const decreaseStock = (id: number, amount = 1) => {
+  const decreaseStock = async (id: number, amount = 1) => {
     const item = equipment.find((i: any) => i.id === id);
     if (!item) return;
     const newStock = Math.max(0, (item.stock || 0) - amount);
-    productsDB.update(id, { stock: newStock });
+    await productsDB.update(id, { stock: newStock });
     setEquipment((eq) => eq.map((i: any) => i.id === id ? { ...i, stock: newStock } : i));
   };
-  const removeEquipment = (id: number) => {
-    productsDB.delete(id);
+  const removeEquipment = async (id: number) => {
+    await productsDB.delete(id);
     setEquipment((eq) => eq.filter((i: any) => i.id !== id));
   };
 
   const openCreate = () => { setEditItem(null); setForm({ name: "", category: "", price: "", stock: "", image: "" }); setIsCreateOpen(true); };
   const openEdit = (item: Equipment) => { setEditItem(item); setForm({ name: item.name, category: item.category, price: String(item.price), stock: String(item.stock), image: item.image || "" }); setIsCreateOpen(true); };
 
-  const submitForm = () => {
+  const submitForm = async () => {
     if (!form.name.trim() || !form.category.trim() || Number(form.price) <= 0 || Number(form.stock) < 0) return;
-    const newItem: Equipment = { id: Date.now(), name: form.name.trim(), category: form.category.trim(), price: Number(form.price), stock: Number(form.stock), image: form.image || undefined };
-    if (editItem) {
-      setEquipment((eq) => eq.map((i: any) => i.id === editItem.id ? newItem : i));
-    } else {
-      setEquipment((current) => [...current, newItem]);
+    const payload = { name: form.name.trim(), category: form.category.trim(), price: Number(form.price), stock: Number(form.stock), image: form.image || undefined };
+    try {
+      if (editItem) {
+        await productsDB.update(editItem.id, payload);
+      } else {
+        await productsDB.create(payload);
+      }
+      setIsCreateOpen(false);
+      setEditItem(null);
+      toast.addToast(editItem ? "Équipement mis à jour" : "Équipement ajouté, visible sur la page Nos équipements", "success");
+    } catch {
+      toast.addToast("Échec de l'enregistrement", "error");
     }
-    productsDB.create(newItem);
-    setIsCreateOpen(false);
-    setEditItem(null);
   };
 
   return (

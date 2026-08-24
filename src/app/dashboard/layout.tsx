@@ -16,12 +16,16 @@ export default function UserLayout({
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    const email = localStorage.getItem("current_user_email");
-    if (email) {
-      const found = usersDB.getAll<any>().find((item) => item.email.toLowerCase() === email);
-      setUser(found || null);
-    }
-    setIsLoading(false);
+    const load = async () => {
+      const email = localStorage.getItem("current_user_email");
+      if (email) {
+        const users = await usersDB.getAll<any>();
+        const found = users.find((item) => item.email.toLowerCase() === email);
+        setUser(found || null);
+      }
+      setIsLoading(false);
+    };
+    load();
   }, []);
 
   useEffect(() => {

@@ -15,12 +15,12 @@ export default function AdminReceiptsNew() {
   const [search, setSearch] = useState("");
   const [selected, setSelected] = useState<Receipt | null>(null);
   const [downloaded, setDownloaded] = useState("");
-  const [receipts, setReceipts] = useState<Receipt[]>(() => receiptsDB.getAll<Receipt>());
+  const [receipts, setReceipts] = useState<Receipt[]>([]);
 
   useEffect(() => {
-    const onChange = () => setReceipts(receiptsDB.getAll<Receipt>());
-    window.addEventListener("db-change", onChange as any);
-    return () => window.removeEventListener("db-change", onChange as any);
+    const load = async () => setReceipts(await receiptsDB.getAll<Receipt>());
+    load();
+    return receiptsDB.subscribe(() => load());
   }, []);
 
   const filtered = useMemo(() => receipts.filter((receipt) => `${receipt.reference} ${receipt.userName} ${receipt.description}`.toLowerCase().includes(search.toLowerCase())), [receipts, search]);

@@ -1,0 +1,212 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "sqlite"
+}
+
+model Activity {
+  id          Int    @id @default(autoincrement())
+  name        String
+  category    String
+  description String
+  trainer     String
+  duration    String
+  capacity    Int
+  priceWeek   Float
+  priceMonth  Float
+  priceYear   Float
+  image       String @default("")
+  icon        String @default("")
+}
+
+model Trainer {
+  id            Int    @id @default(autoincrement())
+  name          String
+  specialty     String
+  experience    String
+  activitiesJson String @default("[]")
+  bio           String
+  image         String @default("")
+  socialJson    String @default("{}")
+}
+
+model Place {
+  id          Int    @id @default(autoincrement())
+  name        String
+  type        String
+  capacity    Int
+  location    String
+  description String
+  image       String @default("")
+  status      String @default("Disponible")
+}
+
+model PricingPlan {
+  id           String  @id
+  name         String
+  period       String
+  price        Float
+  currency     String  @default("USD")
+  popular      Boolean @default(false)
+  featuresJson String  @default("[]")
+}
+
+model Subscription {
+  id               Int     @id @default(autoincrement())
+  requestId        Int?
+  userId           Int?
+  userName         String
+  email            String?
+  memberNumber     String?
+  planId           String
+  planName         String
+  activityId       Int?
+  activityName     String
+  status           String
+  startDate        String
+  endDate          String
+  amount           Float
+  currency         String  @default("USD")
+  paymentMethod    String
+  paymentReference String?
+  createdAt        String
+}
+
+model Product {
+  id          Int     @id @default(autoincrement())
+  name        String
+  category    String
+  price       Float
+  stock       Int     @default(0)
+  image       String?
+  description String?
+}
+
+model SubscriptionRequest {
+  id           Int     @id @default(autoincrement())
+  userId       Int?
+  userName     String
+  email        String
+  phone        String
+  activityId   Int?
+  activityName String?
+  planId       String?
+  planName     String?
+  subject      String?
+  description  String?
+  status       String  @default("En attente")
+  requestedAt  String?
+  createdAt    String?
+  notes        String?
+}
+
+model Payment {
+  id             Int     @id @default(autoincrement())
+  userId         Int?
+  userName       String?
+  email          String?
+  requestId      Int?
+  subscriptionId Int?
+  reservationId  Int?
+  activityId     Int?
+  activityName   String?
+  amount         Float?
+  total          Float?
+  currency       String?
+  method         String?
+  status         String?
+  reference      String?
+  phoneNumber    String?
+  description    String?
+  createdAt      String?
+  paidAt         String?
+  date           String?
+  itemsJson      String?
+}
+
+model PaymentProvider {
+  id          String @id
+  name        String
+  icon        String
+  color       String
+  description String
+}
+
+model Reservation {
+  id           Int     @id @default(autoincrement())
+  userId       Int
+  userName     String
+  email        String?
+  activityId   Int
+  activityName String
+  activityIcon String  @default("")
+  placeId      Int
+  placeName    String
+  date         String
+  time         String
+  duration     String
+  status       String
+  createdAt    String
+  notes        String?
+}
+
+model TimeSlot {
+  id        Int     @id @default(autoincrement())
+  time      String
+  available Boolean @default(true)
+  capacity  Int     @default(0)
+  booked    Int     @default(0)
+}
+
+model Receipt {
+  id              Int     @id @default(autoincrement())
+  reference       String
+  subscriptionId  Int?
+  userId          Int?
+  userName        String
+  email           String?
+  phone           String?
+  memberNumber    String?
+  type            String
+  amount          Float
+  currency        String  @default("USD")
+  paymentMethod   String
+  paymentReference String
+  description     String
+  date            String
+  status          String
+  itemsJson       String  @default("[]")
+}
+
+model User {
+  id                 Int     @id @default(autoincrement())
+  name               String
+  email              String
+  phone              String?
+  role               String  @default("Utilisateur")
+  status             String  @default("Actif")
+  lastLogin          String?
+  password           String?
+  memberNumber       String?
+  mustChangePassword Boolean @default(false)
+
+  @@unique([email])
+}
+
+model GalleryImage {
+  id          Int     @id @default(autoincrement())
+  title       String
+  description String?
+  image       String
+  alt         String
+  order       Int     @default(0)
+  visible     Boolean @default(true)
+}
+
+model Stat {
+  id   Int    @id @default(1)
+  data String @default("{}")
+}

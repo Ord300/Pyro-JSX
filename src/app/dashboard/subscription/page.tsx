@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { Card } from "@/src/components/ui/Card";
 import { Badge } from "@/src/components/ui/Badge";
@@ -14,8 +14,20 @@ export default function UserSubscription() {
   const { data: activities = [] } = useActivities();
   const [showWizard, setShowWizard] = useState(false);
   const [lastReference, setLastReference] = useState("");
-  const currentEmail = localStorage.getItem("current_user_email") || "";
-  const activeSubscription = subscriptionsDB.getAll<any>().find((subscription) => subscription.status === "Validée" && subscription.email?.toLowerCase() === currentEmail);
+  const [activeSubscription, setActiveSubscription] = useState<any | null>(null);
+
+  useEffect(() => {
+    const load = async () => {
+      const currentEmail = localStorage.getItem("current_user_email") || "";
+      if (!currentEmail) return;
+      const subscriptions = await subscriptionsDB.getAll<any>();
+      setActiveSubscription(
+        subscriptions.find((subscription) => subscription.status === "Validée" && subscription.email?.toLowerCase() === currentEmail) || null
+      );
+    };
+    load();
+    return subscriptionsDB.subscribe(() => load());
+  }, []);
 
   const handleWizardComplete = (reference: string) => {
     setLastReference(reference);

@@ -147,4 +147,90 @@
   .img-zoom:hover {
     transform: scale(1.05);
   }
+
+  /* Effet Ken Burns pour le carrousel du hero */
+  @keyframes hero-zoom {
+    from { transform: scale(1); }
+    to { transform: scale(1.1); }
+  }
+}
+/* ══════════════════════════════════════════════════════════
+   ESPACE ADMIN MOVEUP — Identité violette distincte
+   (le reste du site utilise le vert émeraude)
+   ══════════════════════════════════════════════════════════ */
+
+/* Re-coloration automatique : toutes les classes primary-*
+   deviennent violettes dans la zone admin */
+.admin-scope {
+  --color-primary-50: #f5f3ff;
+  --color-primary-100: #ede9fe;
+  --color-primary-200: #ddd6fe;
+  --color-primary-300: #c4b5fd;
+  --color-primary-400: #a78bfa;
+  --color-primary-500: #8b5cf6;
+  --color-primary-600: #7c3aed;
+  --color-primary-700: #6d28d9;
+  --color-primary-800: #5b21b6;
+  --color-primary-900: #4c1d95;
+}
+
+@layer components {
+  /* Fond aurora boréal animé */
+  .admin-shell {
+    background:
+      radial-gradient(55rem 28rem at 115% -10%, rgba(139, 92, 246, 0.16), transparent 60%),
+      radial-gradient(45rem 25rem at -15% 110%, rgba(217, 70, 239, 0.12), transparent 55%),
+      #070b17;
+    animation: admin-aurora 14s ease-in-out infinite alternate;
+    background-size: 160% 160%;
+  }
+
+  @keyframes admin-aurora {
+    0% { background-position: 0% 0%; }
+    100% { background-position: 100% 100%; }
+  }
+
+  /* Apparition douce du contenu à chaque navigation */
+  @keyframes admin-fade-up {
+    from { opacity: 0; transform: translateY(12px); }
+    to { opacity: 1; transform: none; }
+  }
+  .admin-fade-in {
+    animation: admin-fade-up 0.4s cubic-bezier(0.16, 1, 0.3, 1) both;
+  }
+
+  /* Barre active du menu latéral avec pulsation */
+  .admin-nav-item {
+    position: relative;
+    transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+  .admin-nav-item:hover {
+    transform: translateX(4px);
+  }
+  .admin-nav-active::before {
+    content: "";
+    position: absolute;
+    left: -12px;
+    top: 50%;
+    translate: 0 -50%;
+    width: 4px;
+    height: 60%;
+    border-radius: 9999px;
+    background: linear-gradient(to bottom, #8b5cf6, #d946ef);
+    box-shadow: 0 0 12px rgba(139, 92, 246, 0.8);
+    animation: admin-pulse-bar 2s ease-in-out infinite;
+  }
+  @keyframes admin-pulse-bar {
+    0%, 100% { opacity: 1; height: 60%; }
+    50% { opacity: 0.55; height: 40%; }
+  }
+
+  /* Cartes admin : lueur violette au survol */
+  .admin-card-hover {
+    transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.3s ease;
+  }
+  .admin-card-hover:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 12px 32px -12px rgba(139, 92, 246, 0.45);
+  }
 }

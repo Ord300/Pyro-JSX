@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useEffect, useState } from "react";
 import { Card } from "@/src/components/ui/Card";
 import { Badge } from "@/src/components/ui/Badge";
 import { subscriptionsDB, reservationsDB, paymentsDB, usersDB } from "@/src/services/dbService";
@@ -8,11 +9,28 @@ import type { Reservation } from "@/src/types/reservation";
 import { CreditCard, Calendar, Wallet, Bell, ArrowRight } from "lucide-react";
 
 export default function UserDashboard() {
-  const email = localStorage.getItem("current_user_email") || "";
-  const user = usersDB.getAll<any>().find((item) => item.email.toLowerCase() === email);
-  const subscriptions = subscriptionsDB.getAll<any>().filter((subscription) => subscription.email?.toLowerCase() === email);
-  const reservations = reservationsDB.getAll<Reservation>().filter((reservation: any) => reservation.email?.toLowerCase() === email);
-  const payments = paymentsDB.getAll<any>().filter((payment) => payment.email?.toLowerCase() === email);
+  const [user, setUser] = useState<any | null>(null);
+  const [subscriptions, setSubscriptions] = useState<any[]>([]);
+  const [reservations, setReservations] = useState<Reservation[]>([]);
+  const [payments, setPayments] = useState<any[]>([]);
+
+  useEffect(() => {
+    const load = async () => {
+      const email = localStorage.getItem("current_user_email") || "";
+      if (!email) return;
+      const [users, allSubscriptions, allReservations, allPayments] = await Promise.all([
+        usersDB.getAll<any>(),
+        subscriptionsDB.getAll<any>(),
+        reservationsDB.getAll<Reservation>(),
+        paymentsDB.getAll<any>(),
+      ]);
+      setUser(users.find((item) => item.email.toLowerCase() === email) || null);
+      setSubscriptions(allSubscriptions.filter((subscription: any) => subscription.email?.toLowerCase() === email));
+      setReservations(allReservations.filter((reservation: any) => reservation.email?.toLowerCase() === email));
+      setPayments(allPayments.filter((payment: any) => payment.email?.toLowerCase() === email));
+    };
+    load();
+  }, []);
 
   const activeSubscription = subscriptions.find((s) => s.status === "Validée");
   const upcomingReservations = reservations.filter((r) => r.status === "Confirmée");

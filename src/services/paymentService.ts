@@ -6,9 +6,9 @@ import { paymentsDB, paymentProvidersDB } from "@/src/services/dbService";
 // Simule les API M-Pesa / Orange Money
 // ============================================================
 
-const generateReference = (): string => {
+const generateReference = async (): Promise<string> => {
   const year = new Date().getFullYear();
-  const payments = paymentsDB.getAll<Payment>();
+  const payments = await paymentsDB.getAll<Payment>();
   const nextNum = payments.length + 1;
   return `PAY-${year}-${String(nextNum).padStart(4, "0")}`;
 };
@@ -69,10 +69,10 @@ export const processPayment = async (request: PaymentRequest): Promise<PaymentRe
       providerResult = { success: true, message: "Paiement en espèces à confirmer à la réception" };
   }
 
-  const reference = generateReference();
+  const reference = await generateReference();
 
   if (providerResult.success) {
-    const payment = paymentsDB.create<Payment>({
+    const payment = await paymentsDB.create<Payment>({
       userId: 1,
       userName: "Jean Dupont",
       amount: request.amount,
@@ -101,24 +101,24 @@ export const processPayment = async (request: PaymentRequest): Promise<PaymentRe
   };
 };
 
-export const getPayments = (): Payment[] => {
+export const getPayments = async (): Promise<Payment[]> => {
   return paymentsDB.getAll<Payment>();
 };
 
-export const getPaymentsByUser = (userId: number): Payment[] => {
-  return paymentsDB.getAll<Payment>().filter((p) => p.userId === userId);
+export const getPaymentsByUser = async (userId: number): Promise<Payment[]> => {
+  return (await paymentsDB.getAll<Payment>()).filter((p) => p.userId === userId);
 };
 
-export const getPaymentByReference = (reference: string): Payment | undefined => {
-  return paymentsDB.getAll<Payment>().find((p) => p.reference === reference);
+export const getPaymentByReference = async (reference: string): Promise<Payment | undefined> => {
+  return (await paymentsDB.getAll<Payment>()).find((p) => p.reference === reference);
 };
 
-export const checkPaymentStatus = (reference: string): Payment | undefined => {
+export const checkPaymentStatus = async (reference: string): Promise<Payment | undefined> => {
   return getPaymentByReference(reference);
 };
 
-export const refundPayment = (reference: string): Payment | undefined => {
-  const payment = getPaymentByReference(reference);
+export const refundPayment = async (reference: string): Promise<Payment | undefined> => {
+  const payment = await getPaymentByReference(reference);
   if (payment) {
     return paymentsDB.update<Payment>(payment.id, { status: "Remboursé" });
   }

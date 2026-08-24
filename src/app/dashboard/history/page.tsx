@@ -19,12 +19,16 @@ export default function UserHistory() {
   const [allPayments, setAllPayments] = useState<any[]>([]);
 
   useEffect(() => {
-    const email = localStorage.getItem("current_user_email") || localStorage.getItem("current_subscriber_email");
-    setCurrentEmail(email);
-    if (email) {
-      setCurrentUser(usersDB.getAll<any>().find((u) => u.email?.toLowerCase() === email.toLowerCase()) || null);
-    }
-    setAllPayments(paymentsDB.getAll<any>());
+    const load = async () => {
+      const email = localStorage.getItem("current_user_email") || localStorage.getItem("current_subscriber_email");
+      setCurrentEmail(email);
+      const [users, payments] = await Promise.all([usersDB.getAll<any>(), paymentsDB.getAll<any>()]);
+      if (email) {
+        setCurrentUser(users.find((u) => u.email?.toLowerCase() === email.toLowerCase()) || null);
+      }
+      setAllPayments(payments);
+    };
+    load();
   }, []);
 
   const getStatusVariant = (status: string) => {
