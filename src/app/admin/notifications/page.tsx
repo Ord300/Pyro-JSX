@@ -8,6 +8,7 @@ import { Card } from "@/src/components/ui/Card";
 import { Input } from "@/src/components/ui/Input";
 import { useActivities } from "@/src/hooks/queries/activities";
 import { notificationsDB, subscriptionsDB, usersDB } from "@/src/services/dbService";
+import { sendImportantEmail } from "@/src/services/notifyService";
 
 type Notification = {
   id: number;
@@ -88,9 +89,15 @@ export default function AdminNotifications() {
           })
         )
       );
+      // E-mail à chaque destinataire (copie de l'annonce) — sans bloquer
+      const mailTitle = title.trim();
+      const mailBody = body.trim();
+      recipients.forEach((email) => {
+        sendImportantEmail("annonce", { email, title: mailTitle, message: mailBody, type }).catch(() => {});
+      });
       setTitle("");
       setBody("");
-      setFeedback(`Notification envoyée à ${recipients.length} destinataire${recipients.length > 1 ? "s" : ""}.`);
+      setFeedback(`Notification envoyée à ${recipients.length} destinataire${recipients.length > 1 ? "s" : ""} (in-app + e-mail).`);
     } finally {
       setSending(false);
     }

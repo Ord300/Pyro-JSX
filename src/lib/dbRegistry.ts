@@ -59,7 +59,18 @@ function serializeOut(resource: string, record: any, config: ResourceConfig): an
   const out = { ...record };
   for (const [publicName, column] of Object.entries(config.jsonFields)) {
     const raw = out[column];
-    out[publicName] = raw ? JSON.parse(raw) : publicName === "social" ? {} : [];
+    if (!raw) {
+      out[publicName] = publicName === "social" ? {} : [];
+    } else if (typeof raw !== "string") {
+      out[publicName] = raw;
+    } else {
+      try {
+        out[publicName] = JSON.parse(raw);
+      } catch {
+        console.error(`[DB] ${resource}#${(record as any)?.id} — champ JSON corrompu (${String(column)}), valeur par défaut utilisée.`);
+        out[publicName] = publicName === "social" ? {} : [];
+      }
+    }
     delete out[column];
   }
   if (resource === "users") delete out.password;

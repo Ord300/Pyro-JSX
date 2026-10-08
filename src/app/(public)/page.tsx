@@ -38,8 +38,6 @@ function Stars({ rating }: { rating: number }) {
 }
 
 const HERO_IMAGES = [
-  "/hero-salle.jpg",
-  "/hero-foot.jpg",
   "/hero-basket.jpg",
   "/hero-yoga.jpg",
   "/hero-basket-2.jpg",

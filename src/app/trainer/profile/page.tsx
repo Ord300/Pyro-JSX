@@ -6,6 +6,7 @@ import { Badge } from "@/src/components/ui/Badge";
 import { Button } from "@/src/components/ui/Button";
 import { Input } from "@/src/components/ui/Input";
 import { usersDB } from "@/src/services/dbService";
+import { notifyImportantAction } from "@/src/services/notifyService";
 import { loadTrainerContext, type TrainerContext } from "@/src/services/trainerSpace";
 import { useToast } from "@/src/contexts/ToastContext";
 
@@ -29,6 +30,9 @@ export default function TrainerProfile() {
       await usersDB.update(ctx.user.id, { phone });
       setCtx({ ...ctx, user: { ...ctx.user, phone } });
       toast.addToast("Téléphone mis à jour", "success");
+      if (ctx.user.email?.includes("@")) {
+        notifyImportantAction("profil_modifie", { email: ctx.user.email, name: ctx.user.name }).catch(() => {});
+      }
     } catch {
       toast.addToast("Mise à jour impossible", "error");
     } finally {

@@ -9,6 +9,7 @@ import { Modal } from "@/src/components/ui/Modal";
 import { useTrainers, useCreateTrainer, useUpdateTrainer, useDeleteTrainer } from "@/src/hooks/queries/trainers";
 import { useActivities } from "@/src/hooks/queries/activities";
 import { usersDB } from "@/src/services/dbService";
+import { notifyImportantAction } from "@/src/services/notifyService";
 import { useToast } from "@/src/contexts/ToastContext";
 import type { Trainer } from "@/src/data/mockData";
 import { useForm } from "react-hook-form";
@@ -93,6 +94,11 @@ export default function AdminTrainers() {
       mustChangePassword: false,
     } as any);
     toast.addToast(`Compte entraîneur créé (${clean} / mot de passe : password)`, "success");
+    notifyImportantAction("compte_cree", {
+      email: clean,
+      name,
+      message: "Votre compte entraîneur a été créé. Identifiant : votre e-mail. Mot de passe initial : password.",
+    }).catch(() => {});
   };
 
   const onSubmit = async (data: TrainerForm) => {

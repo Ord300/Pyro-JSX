@@ -7,6 +7,7 @@ import { Badge } from "@/src/components/ui/Badge";
 import { Button } from "@/src/components/ui/Button";
 import { Input } from "@/src/components/ui/Input";
 import { attendancesDB } from "@/src/services/dbService";
+import { notifyImportantAction } from "@/src/services/notifyService";
 import { loadTrainerContext, type TrainerContext } from "@/src/services/trainerSpace";
 import { useToast } from "@/src/contexts/ToastContext";
 
@@ -93,6 +94,17 @@ export default function TrainerAttendance() {
       }
       await reload();
       toast.addToast(`Présences enregistrées (${presentCount}/${roster.length} présents)`, "success");
+      // Notifie chaque abonné présent (in-app + e-mail) — fire-and-forget
+      roster.forEach((s) => {
+        if (!s.email?.includes("@")) return;
+        notifyImportantAction("presence", {
+          email: s.email,
+          name: s.userName,
+          activityName: activity,
+          date,
+          message: marks[String(s.email ?? s.userName).toLowerCase()] ? "Présent(e)" : "Absent(e)",
+        }).catch(() => {});
+      });
     } catch {
       toast.addToast("Enregistrement impossible", "error");
     } finally {

@@ -6,6 +6,7 @@ import { Badge } from "@/src/components/ui/Badge";
 import { Button } from "@/src/components/ui/Button";
 import { Input } from "@/src/components/ui/Input";
 import { messagesDB, usersDB } from "@/src/services/dbService";
+import { notifyImportantAction } from "@/src/services/notifyService";
 import { cn } from "@/src/utils/cn";
 import { Headset, MessageSquare, Send, ShieldCheck } from "lucide-react";
 
@@ -90,6 +91,14 @@ export default function UserMessages() {
         readBySubscriber: true,
       });
       setDraft("");
+      // Confirme à l'auteur par e-mail (action causée par lui)
+      notifyImportantAction("message_recu", {
+        email: currentEmail,
+        name: userName,
+        subject: subject.trim() || "Message envoyé à l'administration",
+        body: draft.trim(),
+        senderName: "Vous (copie de votre message)",
+      }).catch(() => {});
     } finally {
       setSending(false);
     }

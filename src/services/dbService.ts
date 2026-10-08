@@ -32,10 +32,19 @@ async function apiRequest<T>(url: string, options?: RequestInit): Promise<T> {
     ...options,
   });
   if (!response.ok) {
+    // Lecture en texte (jamais de .json() non gardé) : un corps vide/HTML ne doit plus masquer l'erreur.
     let message = `Erreur API ${response.status}`;
     try {
-      const body = await response.json();
-      if (body?.error) message = body.error;
+      const text = await response.text();
+      if (text) {
+        try {
+          const body = JSON.parse(text);
+          if (body?.error) message = body.error;
+          else message = `${message} — ${text.slice(0, 200)}`;
+        } catch {
+          message = `${message} — ${text.slice(0, 200)}`;
+        }
+      }
     } catch {
       // ignore
     }

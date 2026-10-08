@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { CheckCircle, XCircle, Eye, Search } from "lucide-react";
+import { CheckCircle, XCircle, Eye, Search, Undo2 } from "lucide-react";
 import { Button } from "@/src/components/ui/Button";
 import { Input } from "@/src/components/ui/Input";
 import { Badge } from "@/src/components/ui/Badge";
@@ -9,6 +9,7 @@ import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@
 import { Modal } from "@/src/components/ui/Modal";
 import { subscriptionFlow } from "@/src/services/subscriptionFlowService";
 import { notificationsDB } from "@/src/services/dbService";
+import { sendImportantEmail } from "@/src/services/notifyService";
 
 type ReqStatus = "En attente" | "Confirmée" | "Refusée";
 
@@ -43,24 +44,53 @@ export default function AdminRequests() {
   );
 
   const updateStatus = async (id: string, status: ReqStatus) => {
-    setRequests((prev) => prev.map((r) => (r.id === id ? { ...r, status } : r)));
     const target = requests.find((r) => r.id === id);
+    const previous = target?.status;
+    setRequests((prev) => prev.map((r) => (r.id === id ? { ...r, status } : r)));
     await subscriptionFlow.setRequestStatus(Number(id), status as any);
     if (target?.email) {
+      const cancelled = status === "En attente" && previous === "Confirmée";
       await notificationsDB.create({
         userEmail: target.email.toLowerCase(),
-        title: status === "Confirmée" ? "Demande d'abonnement confirmée" : "Demande d'abonnement refusée",
+        title:
+          status === "Confirmée"
+            ? "Demande d'abonnement confirmée"
+            : status === "Refusée"
+              ? "Demande d'abonnement refusée"
+              : "Confirmation de demande annulée",
         message:
           status === "Confirmée"
             ? `Bonne nouvelle ${target.name} ! Votre demande a été confirmée. Finalisez votre abonnement depuis la page de vérification ou le module Activités.`
-            : `Bonjour ${target.name}, votre demande a été refusée par l'administration. Contactez-nous via la messagerie pour plus d'informations.`,
-        type: status === "Confirmée" ? "success" : "warning",
+            : status === "Refusée"
+              ? `Bonjour ${target.name}, votre demande a été refusée par l'administration. Contactez-nous via la messagerie pour plus d'informations.`
+              : `Bonjour ${target.name}, la confirmation de votre demande a été annulée par l'administration. Votre demande repasse « En attente » et sera réexaminée.`,
+        type: status === "Confirmée" ? "success" : status === "Refusée" ? "warning" : "info",
         audience: "Suivi de demande",
         createdAt: new Date().toISOString(),
         read: false,
       });
+      // E-mail à l'auteur de la demande (ne bloque pas l'admin)
+      if (status === "Confirmée" || status === "Refusée") {
+        sendImportantEmail(status === "Confirmée" ? "demande_confirmed" : "demande_rejected", {
+          email: target.email,
+          name: target.name,
+        }).catch(() => {});
+      } else if (cancelled) {
+        sendImportantEmail("annonce", {
+          email: target.email,
+          name: target.name,
+          title: "Confirmation de demande annulée",
+          message: `Bonjour ${target.name}, la confirmation de votre demande a été annulée par l'administration. Votre demande repasse « En attente » et sera réexaminée.`,
+          type: "info",
+        }).catch(() => {});
+      }
     }
     setSelected(null);
+  };
+
+  const cancelConfirmation = async (id: string) => {
+    if (!confirm("Annuler la confirmation de cette demande ? Elle repassera « En attente » et le demandeur sera notifié par e-mail.")) return;
+    await updateStatus(id, "En attente");
   };
 
   const counts = {
@@ -133,6 +163,9 @@ export default function AdminRequests() {
                           <Button size="icon" variant="ghost" className="h-8 w-8 text-red-500" onClick={() => updateStatus(req.id, "Refusée")} title="Refuser"><XCircle className="h-4 w-4" /></Button>
                         </>
                       )}
+                      {req.status === "Confirmée" && (
+                        <Button size="icon" variant="ghost" className="h-8 w-8 text-amber-600" onClick={() => cancelConfirmation(req.id)} title="Annuler la confirmation (repasse en attente)"><Undo2 className="h-4 w-4" /></Button>
+                      )}
                     </div>
                   </TableCell>
                 </TableRow>
@@ -162,6 +195,14 @@ export default function AdminRequests() {
                 <Button variant="danger" className="flex-1" onClick={() => updateStatus(selected.id, "Refusée")}>
                   <XCircle className="mr-2 h-4 w-4" />Refuser
                 </Button>
+              </div>
+            )}
+            {selected.status === "Confirmée" && (
+              <div className="mt-4">
+                <Button variant="outline" className="w-full" onClick={() => cancelConfirmation(selected.id)}>
+                  <Undo2 className="mr-2 h-4 w-4" />Annuler la confirmation
+                </Button>
+                <p className="mt-2 text-center text-xs text-slate-400">La demande repassera « En attente » et le demandeur sera notifié par e-mail.</p>
               </div>
             )}
           </div>

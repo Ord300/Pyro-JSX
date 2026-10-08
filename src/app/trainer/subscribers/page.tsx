@@ -9,6 +9,7 @@ import { Input } from "@/src/components/ui/Input";
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/src/components/ui/Table";
 import { Modal } from "@/src/components/ui/Modal";
 import { subscriptionsDB, messagesDB, notificationsDB } from "@/src/services/dbService";
+import { notifyImportantAction, sendImportantEmail } from "@/src/services/notifyService";
 import { loadTrainerContext, phoneOf, presenceStats, type TrainerContext } from "@/src/services/trainerSpace";
 import { useToast } from "@/src/contexts/ToastContext";
 
@@ -79,6 +80,13 @@ export default function TrainerSubscribers() {
         createdAt: now,
         read: false,
       });
+      sendImportantEmail("message_recu", {
+        email: contactTarget.email,
+        name: contactTarget.userName,
+        subject: contactSubject.trim() || "Message de votre coach",
+        body: contactBody.trim(),
+        senderName: ctx?.trainer?.name ?? ctx?.user?.name ?? "Votre coach",
+      }).catch(() => {});
       toast.addToast(`Message envoyé à ${contactTarget.userName}`, "success");
       setContactTarget(null);
     } catch {
@@ -96,6 +104,18 @@ export default function TrainerSubscribers() {
         setSelected((prev: any) => (prev ? { ...prev, status } : prev));
         await reload();
         toast.addToast(`Abonnement « ${status} »`, "success");
+        // Notifie l'abonné concerné (in-app + e-mail)
+        const target = (updated as any) || selected;
+        if (target?.email) {
+          notifyImportantAction("annonce", {
+            email: target.email,
+            name: target.userName,
+            title: `Statut abonnement : ${status}`,
+            message: `Votre abonnement « ${target.activityName || ""} » est passé au statut « ${status} » par votre coach.`,
+            type: status === "Validée" ? "success" : "warning",
+            audience: "Suivi abonnement",
+          }).catch(() => {});
+        }
       }
     } catch {
       toast.addToast("Mise à jour impossible", "error");

@@ -1,4 +1,5 @@
 import { activitiesDB, paymentsDB, receiptsDB, subscriptionRequestsDB, subscriptionsDB, usersDB } from "@/src/services/dbService";
+import { notifyPaymentConfirmation } from "@/src/services/notifyService";
 import type { Activity } from "@/src/data/mockData";
 import type { SubscriptionPlan } from "@/src/types/subscription";
 
@@ -51,7 +52,10 @@ export const subscriptionFlow = {
       createdAt: new Date().toISOString(),
       status: "En attente",
     });
-    return normalizeRequest(created);
+    const req = normalizeRequest(created);
+    // NOTE : l'e-mail de confirmation + la notif in-app du demandeur ET l'alerte admin
+    // sont envoyés côté serveur (POST /api/db/subscriptionRequests) — source unique, pas de doublon ici.
+    return req;
   },
   setRequestStatus: (id: number, status: RequestStatus) => subscriptionRequestsDB.update<ContactRequest>(id, { status }),
   completePayment: async ({ request, activity, plan, method, phone }: { request: ContactRequest; activity: Activity; plan: SubscriptionPlan; method: "M-Pesa" | "Orange Money"; phone: string }) => {
@@ -59,7 +63,14 @@ export const subscriptionFlow = {
     const existing = existingSubscriptions.find((subscription) => subscription.requestId === request.id && subscription.status === "Validée");
     if (existing) {
       const receipts = await receiptsDB.getAll<any>();
-      return { subscription: existing, receipt: receipts.find((receipt) => receipt.subscriptionId === existing.id), duplicate: true };
+      let receipt = receipts.find((receipt) => receipt.subscriptionId === existing.id);
+      if (!receipt) {
+        // Cas de reprise après échec partiel (paiement + abonnement OK, reçu manquant) : on régénère le reçu.
+        const healedReceipts = await receiptsDB.getAll<any>();
+        const start = new Date();
+        receipt = await receiptsDB.create<any>({ reference: `REC-${start.getFullYear()}-${String(healedReceipts.length + 1).padStart(4, "0")}`, subscriptionId: existing.id, userId: 0, userName: request.name, email: request.email, phone: request.phone, memberNumber: existing.memberNumber ?? null, type: "Abonnement", amount: existing.amount, currency: existing.currency || "USD", paymentMethod: existing.paymentMethod, paymentReference: existing.paymentReference, description: `${activity.name} - ${plan.name}`, date: start.toISOString().slice(0, 10), status: "Payé", items: [{ label: `${activity.name} — ${plan.name}`, quantity: 1, unitPrice: existing.amount, total: existing.amount }] });
+      }
+      return { subscription: existing, receipt, duplicate: true };
     }
     const start = new Date();
     const end = new Date(start);
@@ -78,6 +89,19 @@ export const subscriptionFlow = {
     if (user) await usersDB.update(user.id, accountData);
     else await usersDB.create({ name: request.name, email: request.email, phone: request.phone, ...accountData, lastLogin: start.toISOString().slice(0, 10) });
     localStorage.setItem("current_subscriber_email", request.email.toLowerCase());
+    notifyPaymentConfirmation("abonnement_valide", {
+      email: request.email,
+      name: request.name,
+      activityName: activity.name,
+      planName: plan.name,
+      amount: payment.amount,
+      currency: "USD",
+      reference: receipt.reference,
+      memberNumber,
+      method,
+      startDate: subscription.startDate,
+      endDate: subscription.endDate,
+    }).catch(() => {});
     return { subscription, receipt, duplicate: false };
   },
   renewSubscription: async ({ subscription, method, phone }: { subscription: any; method: "M-Pesa" | "Orange Money"; phone: string }) => {
@@ -92,6 +116,18 @@ export const subscriptionFlow = {
     const updated = await subscriptionsDB.update<any>(subscription.id, { endDate: end.toISOString().slice(0, 10), amount, paymentMethod: method, paymentReference: payment.reference });
     const allReceipts = await receiptsDB.getAll<any>();
     const receipt = await receiptsDB.create<any>({ reference: `REC-${start.getFullYear()}-${String(allReceipts.length + 1).padStart(4, "0")}`, subscriptionId: subscription.id, userId: subscription.userId ?? 0, userName: subscription.userName, email: subscription.email, memberNumber: subscription.memberNumber ?? null, type: "Renouvellement", amount, currency: subscription.currency || "USD", paymentMethod: method, paymentReference: payment.reference, description: `${subscription.activityName} - ${subscription.planName}`, date: start.toISOString().slice(0, 10), status: "Payé", items: [{ label: `Renouvellement ${subscription.activityName} — ${subscription.planName}`, quantity: 1, unitPrice: amount, total: amount }] });
+    notifyPaymentConfirmation("renouvellement", {
+      email: subscription.email,
+      name: subscription.userName,
+      activityName: subscription.activityName,
+      planName: subscription.planName,
+      amount,
+      currency: subscription.currency || "USD",
+      reference: receipt.reference,
+      memberNumber: subscription.memberNumber,
+      method,
+      endDate: end.toISOString().slice(0, 10),
+    }).catch(() => {});
     return { subscription: updated ?? { ...subscription, endDate: end.toISOString().slice(0, 10), amount }, receipt };
   },
 };

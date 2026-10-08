@@ -16,6 +16,7 @@ import {
   CreditCard,
 } from "lucide-react";
 import { productsDB, paymentsDB, receiptsDB, paymentProvidersDB, usersDB } from "@/src/services/dbService";
+import { notifyPaymentConfirmation } from "@/src/services/notifyService";
 import { Button } from "@/src/components/ui/Button";
 import { Card } from "@/src/components/ui/Card";
 import { Badge } from "@/src/components/ui/Badge";
@@ -227,6 +228,17 @@ export default function DashboardEquipment() {
         method === "Espèces" ? "Commande enregistrée — paiement à la réception" : `Paiement effectué — Facture ${receipt.reference}`,
         "success"
       );
+      if (currentEmail?.includes("@")) {
+        notifyPaymentConfirmation("achat_equipement", {
+          email: currentEmail,
+          name: userName,
+          amount: total,
+          currency: "USD",
+          method,
+          reference: receipt.reference,
+          message: `Achat équipements — ${cartLines.map((l) => `${l.product.name} ×${l.qty}`).join(", ")}`,
+        }).catch(() => {});
+      }
     } catch {
       toast.addToast("Le paiement a échoué. Veuillez réessayer.", "error");
     } finally {

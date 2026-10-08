@@ -6,6 +6,7 @@ import { Button } from "@/src/components/ui/Button";
 import { Badge } from "@/src/components/ui/Badge";
 import { Mail, Phone, MapPin, Save, Camera, Shield } from "lucide-react";
 import { usersDB } from "@/src/services/dbService";
+import { notifyImportantAction } from "@/src/services/notifyService";
 
 export default function UserProfile() {
   const [user, setUser] = useState<any | null>(null);
@@ -49,6 +50,9 @@ export default function UserProfile() {
     if (user) await usersDB.update(user.id, { name: formData.name, phone: formData.phone });
     setSaved(true);
     setTimeout(() => setSaved(false), 3000);
+    if (formData.email?.includes("@")) {
+      notifyImportantAction("profil_modifie", { email: formData.email, name: formData.name }).catch(() => {});
+    }
   };
 
   return (

@@ -7,6 +7,7 @@ import { Button } from "@/src/components/ui/Button";
 import { Card, CardContent } from "@/src/components/ui/Card";
 import { Input } from "@/src/components/ui/Input";
 import { usersDB } from "@/src/services/dbService";
+import { notifyImportantAction } from "@/src/services/notifyService";
 
 export default function ChangePassword() {
   const router = useRouter();
@@ -22,6 +23,7 @@ export default function ChangePassword() {
     const user = email && users.find((item) => item.email.toLowerCase() === email);
     if (!user) return router.push("/login");
     await usersDB.update(user.id, { password, mustChangePassword: false });
+    notifyImportantAction("mot_de_passe", { email: user.email, name: user.name }).catch(() => {});
     if (user.role === "Gestionnaire") router.push("/admin");
     else if (user.role === "Entraîneur") router.push("/trainer");
     else router.push("/dashboard");

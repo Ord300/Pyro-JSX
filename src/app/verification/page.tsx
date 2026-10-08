@@ -5,13 +5,20 @@ import Link from "next/link";
 import {
   ArrowLeft,
   CalendarDays,
+  Check,
   CheckCircle,
   ChevronLeft,
   ChevronRight,
   Clock,
+  Copy,
   CreditCard,
   Dumbbell,
+  Eye,
+  EyeOff,
+  KeyRound,
+  LogIn,
   MailCheck,
+  Printer,
   Search,
   ShieldCheck,
   XCircle,
@@ -25,8 +32,6 @@ import { useActivities } from "@/src/hooks/queries/activities";
 import { subscriptionFlow, type ContactRequest } from "@/src/services/subscriptionFlowService";
 
 const ACTIVITY_IMAGES = [
-  "/hero-salle.jpg",
-  "/hero-foot.jpg",
   "/hero-basket.jpg",
   "/hero-yoga.jpg",
   "/hero-basket-2.jpg",
@@ -39,6 +44,9 @@ const HIGHLIGHTS = [
   { icon: CheckCircle, label: "Accès immédiat" },
 ];
 
+// Doit rester identique au mot de passe créé dans subscriptionFlowService.completePayment
+const TEMP_PASSWORD = "Sport@2026";
+
 export default function Verification() {
   const { data: activities = [] } = useActivities();
   const [email, setEmail] = useState("");
@@ -48,6 +56,10 @@ export default function Verification() {
   const [method, setMethod] = useState<"M-Pesa" | "Orange Money">("M-Pesa");
   const [phone, setPhone] = useState("");
   const [receipt, setReceipt] = useState<any>();
+  const [paying, setPaying] = useState(false);
+  const [payError, setPayError] = useState("");
+  const [copied, setCopied] = useState<"email" | "password" | "member" | null>(null);
+  const [showTempPwd, setShowTempPwd] = useState(false);
   const [slide, setSlide] = useState(0);
   const [step, setStep] = useState(1);
   const activity = activities.find((item) => item.id === activityId);
@@ -68,14 +80,46 @@ export default function Verification() {
     if (found?.planId) setPlanId(String(found.planId));
     setStep(2);
   };
+  const isPhoneValid = /^(\+243|0)\d{9}$/.test(phone.replace(/\s/g, ""));
   const pay = async () => {
-    if (request && activity && phone) {
+    if (!request || !activity || !phone || paying) return;
+    if (!isPhoneValid) {
+      setPayError("Numéro Mobile Money invalide. Format attendu : +243 XXX XXX XXX.");
+      return;
+    }
+    setPaying(true);
+    setPayError("");
+    try {
       const result = await subscriptionFlow.completePayment({ request, activity, plan, method, phone });
-      setReceipt(result.receipt);
+      if (result.receipt) {
+        setReceipt(result.receipt);
+      } else {
+        // Abonnement déjà validé mais reçu introuvable : pas de crash, message + lien historique.
+        setPayError("Votre abonnement est déjà validé. Retrouvez votre reçu dans votre historique.");
+      }
+    } catch (e: any) {
+      setPayError(e?.message || "Le paiement a échoué. Vérifiez votre connexion puis réessayez — aucun double débit ne sera appliqué.");
+    } finally {
+      setPaying(false);
     }
   };
   const goTo = (index: number) => {
     setSlide(((index % ACTIVITY_IMAGES.length) + ACTIVITY_IMAGES.length) % ACTIVITY_IMAGES.length);
+  };
+
+  const copyText = async (kind: "email" | "password" | "member", value: string) => {
+    try {
+      await navigator.clipboard.writeText(value);
+    } catch {
+      const ta = document.createElement("textarea");
+      ta.value = value;
+      document.body.appendChild(ta);
+      ta.select();
+      document.execCommand("copy");
+      ta.remove();
+    }
+    setCopied(kind);
+    setTimeout(() => setCopied(null), 2000);
   };
   useEffect(() => {
     const timerRef = setInterval(() => {
@@ -86,45 +130,128 @@ export default function Verification() {
 
   // ── ÉCRAN REÇU / SUCCÈS PLEIN ÉCRAN ──
   if (receipt) {
+    const credEmail = request?.email || receipt.email || "";
+    const credRows = [
+      { kind: "member" as const, label: "Matricule", value: receipt.memberNumber || "—" },
+      { kind: "email" as const, label: "Identifiant", value: credEmail },
+    ];
     return (
-      <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-primary-950 via-primary-900 to-primary-700 px-4 py-12">
-        <Card className="w-full max-w-xl border-slate-200 shadow-2xl dark:border-slate-800">
-          <CardContent className="p-8 text-center sm:p-10">
-            <div className="mx-auto mb-5 flex h-20 w-20 items-center justify-center rounded-full bg-green-100 dark:bg-green-900/30">
-              <CheckCircle className="h-11 w-11 text-green-600 dark:text-green-400" />
+      <div className="relative flex min-h-screen items-center justify-center overflow-hidden bg-gradient-to-br from-primary-950 via-primary-900 to-emerald-800 px-4 py-12">
+        <div aria-hidden className="pointer-events-none absolute -left-24 -top-24 h-72 w-72 rounded-full bg-emerald-400/20 blur-3xl" />
+        <div aria-hidden className="pointer-events-none absolute -bottom-24 -right-24 h-72 w-72 rounded-full bg-teal-300/20 blur-3xl" />
+        <Card className="relative w-full max-w-2xl overflow-hidden border-slate-200 shadow-2xl dark:border-slate-800">
+          {/* Bandeau succès */}
+          <div className="bg-gradient-to-r from-emerald-600 to-teal-600 px-8 py-8 text-center text-white">
+            <div className="relative mx-auto mb-4 flex h-20 w-20 items-center justify-center">
+              <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-white/30" />
+              <span className="relative flex h-20 w-20 items-center justify-center rounded-full bg-white shadow-lg">
+                <CheckCircle className="h-11 w-11 text-emerald-600" />
+              </span>
             </div>
-            <h1 className="text-2xl font-extrabold text-slate-900 dark:text-white">Paiement confirmé !</h1>
-            <p className="mt-2 text-slate-500 dark:text-slate-400">Vous êtes maintenant membre de MoveUp.</p>
+            <p className="text-xs font-bold uppercase tracking-[0.2em] text-emerald-100">Paiement réussi</p>
+            <h1 className="mt-1 text-3xl font-extrabold">Bienvenue dans le club !</h1>
+            <p className="mx-auto mt-2 max-w-md text-sm text-emerald-50">
+              Votre abonnement est actif. Voici votre reçu et vos accès — gardez-les précieusement.
+            </p>
+            <div className="mx-auto mt-5 flex max-w-md flex-wrap items-center justify-center gap-2 text-[11px] font-bold">
+              <span className="inline-flex items-center gap-1 rounded-full bg-white/20 px-3 py-1"><Check className="h-3 w-3" />Payé</span>
+              <span className="text-white/50">→</span>
+              <span className="inline-flex items-center gap-1 rounded-full bg-white/20 px-3 py-1"><Check className="h-3 w-3" />Compte créé</span>
+              <span className="text-white/50">→</span>
+              <span className="inline-flex items-center gap-1 rounded-full bg-white px-3 py-1 text-emerald-700">3. Se connecter</span>
+            </div>
+          </div>
 
-            <div className="mt-6 grid grid-cols-1 gap-3 text-left sm:grid-cols-2">
-              <div className="rounded-xl bg-slate-50 p-4 dark:bg-slate-800/60">
-                <p className="text-xs font-medium uppercase tracking-wide text-slate-400">Matricule</p>
-                <p className="mt-1 font-bold text-primary-600 dark:text-primary-400">{receipt.memberNumber}</p>
+          <CardContent className="space-y-6 p-8">
+            {/* Récapitulatif de l'abonnement */}
+            <div>
+              <p className="mb-3 text-xs font-semibold uppercase tracking-widest text-slate-400">Récapitulatif</p>
+              <div className="grid grid-cols-2 gap-3 text-left sm:grid-cols-3">
+                {[
+                  ["Activité", activity?.name || receipt.description?.split(" - ")[0] || "—"],
+                  ["Formule", plan.name],
+                  ["Montant", `${receipt.amount} ${receipt.currency || "USD"}`],
+                  ["Paiement", receipt.paymentMethod || method],
+                  ["Référence", receipt.reference],
+                  ["Valide jusqu'au", endDate],
+                ].map(([label, value]) => (
+                  <div key={label} className="rounded-xl bg-slate-50 p-3 dark:bg-slate-800/60">
+                    <p className="text-[11px] font-medium uppercase tracking-wide text-slate-400">{label}</p>
+                    <p className="mt-0.5 truncate text-sm font-bold text-slate-900 dark:text-white" title={String(value)}>{value}</p>
+                  </div>
+                ))}
               </div>
-              <div className="rounded-xl bg-slate-50 p-4 dark:bg-slate-800/60">
-                <p className="text-xs font-medium uppercase tracking-wide text-slate-400">Référence reçu</p>
-                <p className="mt-1 font-bold text-slate-900 dark:text-white">{receipt.reference}</p>
+            </div>
+
+            {/* Badge d'accès — identifiants temporaires */}
+            <div className="overflow-hidden rounded-2xl bg-slate-900 text-white shadow-lg dark:bg-slate-950 dark:ring-1 dark:ring-slate-700">
+              <div className="flex items-center justify-between bg-white/5 px-5 py-3">
+                <p className="flex items-center gap-2 text-sm font-bold">
+                  <KeyRound className="h-4 w-4 text-amber-300" /> Vos identifiants de connexion
+                </p>
+                <span className="rounded-full bg-amber-400/15 px-2.5 py-1 text-[11px] font-bold text-amber-300">Temporaire</span>
+              </div>
+              <div className="space-y-1 px-5 py-4">
+                {credRows.map((row) => (
+                  <div key={row.kind} className="flex items-center justify-between gap-3 border-b border-white/10 py-2.5 last:border-0">
+                    <div className="min-w-0">
+                      <p className="text-[11px] uppercase tracking-wide text-slate-400">{row.label}</p>
+                      <p className="truncate font-mono text-sm font-semibold">{row.value}</p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => copyText(row.kind, String(row.value))}
+                      className="flex shrink-0 items-center gap-1.5 rounded-lg bg-white/10 px-3 py-1.5 text-xs font-semibold transition-colors hover:bg-white/20"
+                    >
+                      {copied === row.kind ? <Check className="h-3.5 w-3.5 text-emerald-300" /> : <Copy className="h-3.5 w-3.5" />}
+                      {copied === row.kind ? "Copié !" : "Copier"}
+                    </button>
+                  </div>
+                ))}
+                <div className="flex items-center justify-between gap-3 py-2.5">
+                  <div className="min-w-0">
+                    <p className="text-[11px] uppercase tracking-wide text-slate-400">Mot de passe temporaire</p>
+                    <p className="font-mono text-sm font-semibold tracking-wider">{showTempPwd ? TEMP_PASSWORD : "••••••••••"}</p>
+                  </div>
+                  <div className="flex shrink-0 gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setShowTempPwd((v) => !v)}
+                      className="flex items-center gap-1.5 rounded-lg bg-white/10 px-3 py-1.5 text-xs font-semibold transition-colors hover:bg-white/20"
+                    >
+                      {showTempPwd ? <EyeOff className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}
+                      {showTempPwd ? "Masquer" : "Voir"}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => copyText("password", TEMP_PASSWORD)}
+                      className="flex items-center gap-1.5 rounded-lg bg-white/10 px-3 py-1.5 text-xs font-semibold transition-colors hover:bg-white/20"
+                    >
+                      {copied === "password" ? <Check className="h-3.5 w-3.5 text-emerald-300" /> : <Copy className="h-3.5 w-3.5" />}
+                      {copied === "password" ? "Copié !" : "Copier"}
+                    </button>
+                  </div>
+                </div>
+              </div>
+              <div className="flex items-start gap-2 bg-amber-400/10 px-5 py-3 text-xs leading-relaxed text-amber-200">
+                <ShieldCheck className="mt-0.5 h-4 w-4 shrink-0" />
+                <span>Modifiez ce mot de passe dès votre première connexion. Ces accès vous ont aussi été envoyés par e-mail.</span>
               </div>
             </div>
 
-            <div className="mt-5 rounded-xl bg-amber-50 p-4 text-sm text-amber-900 dark:bg-amber-900/20 dark:text-amber-100">
-              <p className="mb-2 flex items-center justify-center gap-2 font-semibold">
-                <ShieldCheck className="h-4 w-4" /> Votre compte est créé
-              </p>
-              Identifiant : <strong>{request?.email}</strong>
-              <br />
-              Mot de passe temporaire : <strong>Sport@2026</strong>
-              <br />
-              <span className="text-xs opacity-80">Vous devrez le modifier à votre première connexion.</span>
-            </div>
+            <p className="flex items-center justify-center gap-2 text-center text-xs text-slate-400">
+              <MailCheck className="h-4 w-4 text-emerald-500" /> Reçu et identifiants envoyés à {credEmail || "votre adresse e-mail"}
+            </p>
 
-            <div className="mt-7 flex flex-col justify-center gap-3 sm:flex-row">
-              <Button onClick={() => window.print()}>
-                <CalendarDays className="mr-2 h-4 w-4" />Télécharger la facture PDF
-              </Button>
-              <Link href="/login">
-                <Button variant="outline" className="w-full sm:w-auto">Se connecter</Button>
+            <div className="flex flex-col justify-center gap-3 sm:flex-row">
+              <Link href="/login" className="flex-1 sm:flex-none">
+                <Button size="lg" className="w-full sm:w-auto">
+                  <LogIn className="mr-2 h-4 w-4" />Se connecter
+                </Button>
               </Link>
+              <Button size="lg" variant="outline" className="flex-1 sm:flex-none" onClick={() => window.print()}>
+                <Printer className="mr-2 h-4 w-4" />Facture PDF
+              </Button>
             </div>
           </CardContent>
         </Card>
@@ -416,11 +543,17 @@ export default function Verification() {
                   </div>
                 </Field>
                 <Field label="Numéro Mobile Money">
-                  <Input value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="08XXXXXXXX" />
+                  <Input value={phone} onChange={(e) => { setPhone(e.target.value); setPayError(""); }} placeholder="08XXXXXXXX" />
                 </Field>
-                <Button size="lg" className="w-full" disabled={!activity || !phone} onClick={pay}>
-                  Confirmer le paiement · {amount} USD
+                {payError && (
+                  <p className="rounded-lg bg-red-50 p-3 text-sm text-red-700 dark:bg-red-900/20 dark:text-red-200">{payError}</p>
+                )}
+                <Button size="lg" className="w-full" disabled={!activity || !phone || paying} onClick={pay}>
+                  {paying ? "Traitement en cours…" : `Confirmer le paiement · ${amount} USD`}
                 </Button>
+                {(!activity || !phone) && !paying && (
+                  <p className="text-center text-xs text-slate-400">Choisissez une activité et saisissez votre numéro Mobile Money pour activer le paiement.</p>
+                )}
               </CardContent>
             </Card>
           )}

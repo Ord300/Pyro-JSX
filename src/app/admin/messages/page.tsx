@@ -6,6 +6,7 @@ import { Badge } from "@/src/components/ui/Badge";
 import { Button } from "@/src/components/ui/Button";
 import { Input } from "@/src/components/ui/Input";
 import { messagesDB, usersDB } from "@/src/services/dbService";
+import { notifyImportantAction } from "@/src/services/notifyService";
 import { cn } from "@/src/utils/cn";
 
 type Message = {
@@ -118,6 +119,13 @@ export default function AdminMessages() {
         readBySubscriber: false,
       });
       setDraft("");
+      notifyImportantAction("message_recu", {
+        email: selected.email,
+        name: selected.name,
+        subject: selected.subject,
+        body: draft.trim(),
+        senderName: "Administration MoveUp",
+      }).catch(() => {});
     } finally {
       setSending(false);
     }

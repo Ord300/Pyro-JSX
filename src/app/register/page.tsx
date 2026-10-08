@@ -12,8 +12,6 @@ import { useToast } from "@/src/contexts/ToastContext";
 import { useActivities } from "@/src/hooks/queries/activities";
 
 const ACTIVITY_IMAGES = [
-  "/hero-salle.jpg",
-  "/hero-foot.jpg",
   "/hero-basket.jpg",
   "/hero-yoga.jpg",
   "/hero-basket-2.jpg",

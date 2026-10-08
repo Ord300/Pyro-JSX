@@ -10,8 +10,6 @@ import { Card, CardContent } from "@/src/components/ui/Card";
 import { useAuth } from "@/src/contexts/AuthContext";
 
 const FACILITY_IMAGES = [
-  "/hero-salle.jpg",
-  "/hero-foot.jpg",
   "/hero-basket.jpg",
   "/hero-yoga.jpg",
   "/hero-basket-2.jpg",
