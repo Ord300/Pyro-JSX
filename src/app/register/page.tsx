@@ -12,12 +12,12 @@ import { useToast } from "@/src/contexts/ToastContext";
 import { useActivities } from "@/src/hooks/queries/activities";
 
 const ACTIVITY_IMAGES = [
-  "https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?q=80&w=800&auto=format&fit=crop",
-  "https://images.unsplash.com/photo-1517836357463-d25dfeac3438?q=80&w=800&auto=format&fit=crop",
-  "https://images.unsplash.com/photo-1517963879433-6ad2b056d712?q=80&w=800&auto=format&fit=crop",
-  "https://images.unsplash.com/photo-1571902943202-507ec2618e8f?q=80&w=800&auto=format&fit=crop",
-  "https://images.unsplash.com/photo-1546483875-ad9014c88eba?q=80&w=800&auto=format&fit=crop",
-  "https://images.unsplash.com/photo-1574680096145-d05b474e2155?q=80&w=800&auto=format&fit=crop",
+  "/hero-salle.jpg",
+  "/hero-foot.jpg",
+  "/hero-basket.jpg",
+  "/hero-yoga.jpg",
+  "/hero-basket-2.jpg",
+  "/equipe-aigles.jpg",
 ];
 
 export default function Register() {

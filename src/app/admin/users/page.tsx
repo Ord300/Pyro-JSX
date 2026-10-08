@@ -86,7 +86,7 @@ export default function AdminUsers() {
             <Input placeholder="Rechercher par nom ou email…" className="pl-9" value={search} onChange={(e) => { setSearch(e.target.value); setPage(1); }} />
           </div>
           <div className="flex gap-2">
-            {["Tous", "Utilisateur", "Abonné", "Gestionnaire"].map((r) => (
+            {["Tous", "Utilisateur", "Abonné", "Entraîneur", "Gestionnaire"].map((r) => (
               <button
                 key={r}
                 onClick={() => { setRoleFilter(r); setPage(1); }}
@@ -207,6 +207,7 @@ export default function AdminUsers() {
               <select {...register("role")} className="mt-1 block w-full rounded-md border border-slate-300 bg-transparent px-3 py-2 text-sm">
                 <option>Utilisateur</option>
                 <option>Abonné</option>
+                <option>Entraîneur</option>
                 <option>Gestionnaire</option>
               </select>
             </div>

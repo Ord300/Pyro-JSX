@@ -10,13 +10,17 @@ import { useEffect } from 'react';
  */
 export function useScrollReveal() {
   useEffect(() => {
-    const targets = document.querySelectorAll<HTMLElement>(
-      '.reveal, .reveal-left, .reveal-right, .reveal-scale'
-    );
+    const selector = '.reveal, .reveal-left, .reveal-right, .reveal-scale';
+
+    const revealAll = (root: ParentNode = document) => {
+      root.querySelectorAll<HTMLElement>(selector).forEach((el) => {
+        if (!el.classList.contains('reveal-visible')) el.classList.add('reveal-visible');
+      });
+    };
 
     if (!('IntersectionObserver' in window)) {
       // Fallback : on affiche tout directement si l'API n'est pas supportée
-      targets.forEach((el) => el.classList.add('reveal-visible'));
+      revealAll();
       return;
     }
 
@@ -36,8 +40,31 @@ export function useScrollReveal() {
       }
     );
 
-    targets.forEach((el) => observer.observe(el));
+    const observeAll = (root: ParentNode = document) => {
+      root.querySelectorAll<HTMLElement>(selector).forEach((el) => {
+        if (!el.classList.contains('reveal-visible')) observer.observe(el);
+      });
+    };
 
-    return () => observer.disconnect();
+    observeAll();
+
+    // Les listes (produits, activités…) arrivent souvent après un fetch :
+    // on observe aussi les éléments ajoutés dynamiquement au DOM.
+    const mutationObserver = new MutationObserver((mutations) => {
+      for (const mutation of mutations) {
+        mutation.addedNodes.forEach((node) => {
+          if (node instanceof HTMLElement) {
+            if (node.matches(selector)) observer.observe(node);
+            observeAll(node);
+          }
+        });
+      }
+    });
+    mutationObserver.observe(document.body, { childList: true, subtree: true });
+
+    return () => {
+      observer.disconnect();
+      mutationObserver.disconnect();
+    };
   }, []);
 }

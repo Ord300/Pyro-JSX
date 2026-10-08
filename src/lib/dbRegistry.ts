@@ -5,6 +5,7 @@ import {
   mockPlaces,
   mockPricingPlans,
   mockGalleryImages,
+  mockProducts,
 } from "@/src/data/mockData";
 import { mockPaymentProviders } from "@/src/data/paymentData";
 
@@ -41,10 +42,13 @@ const RESOURCES: Record<string, ResourceConfig> = {
   payments: { model: () => prisma.payment, jsonFields: { items: "itemsJson" } },
   paymentProviders: { model: () => prisma.paymentProvider, jsonFields: {} },
   reservations: { model: () => prisma.reservation, jsonFields: {} },
+  attendances: { model: () => prisma.attendance, jsonFields: {} },
   timeSlots: { model: () => prisma.timeSlot, jsonFields: {} },
   receipts: { model: () => prisma.receipt, jsonFields: { items: "itemsJson" } },
   users: { model: () => prisma.user, jsonFields: {} },
   gallery: { model: () => prisma.galleryImage, jsonFields: {} },
+  messages: { model: () => prisma.message, jsonFields: {} },
+  notifications: { model: () => prisma.notification, jsonFields: {} },
 };
 
 export function getResource(name: string): ResourceConfig | undefined {
@@ -98,8 +102,19 @@ export async function createRecord(resource: string, data: any): Promise<any> {
   if (!config) throw new Error(`Ressource inconnue: ${resource}`);
   const payload = serializeIn(data, config);
   delete payload.id;
-  const row = await config.model().create({ data: payload });
-  return serializeOut(resource, row, config);
+  try {
+    const row = await config.model().create({ data: payload });
+    return serializeOut(resource, row, config);
+  } catch (e: any) {
+    // Compat : serveur dev non redémarré après `prisma db push` (ancien client sans minAge/maxAge)
+    if (resource === "activities" && /Unknown argument `(minAge|maxAge)`/.test(e?.message ?? "")) {
+      delete payload.minAge;
+      delete payload.maxAge;
+      const row = await config.model().create({ data: payload });
+      return serializeOut(resource, row, config);
+    }
+    throw e;
+  }
 }
 
 export async function updateRecord(resource: string, id: string, data: any): Promise<any | null> {
@@ -110,8 +125,18 @@ export async function updateRecord(resource: string, id: string, data: any): Pro
   if (!existing) return null;
   const payload = serializeIn(data, config);
   delete payload.id;
-  const row = await config.model().update({ where: { id: where } as any, data: payload });
-  return serializeOut(resource, row, config);
+  try {
+    const row = await config.model().update({ where: { id: where } as any, data: payload });
+    return serializeOut(resource, row, config);
+  } catch (e: any) {
+    if (resource === "activities" && /Unknown argument `(minAge|maxAge)`/.test(e?.message ?? "")) {
+      delete payload.minAge;
+      delete payload.maxAge;
+      const row = await config.model().update({ where: { id: where } as any, data: payload });
+      return serializeOut(resource, row, config);
+    }
+    throw e;
+  }
 }
 
 export async function deleteRecord(resource: string, id: string): Promise<boolean> {
@@ -168,6 +193,7 @@ async function seedActivitiesAndContent() {
   await prisma.trainer.createMany({
     data: mockTrainers.map((t: any) => ({
       name: t.name,
+      email: t.email ?? "",
       specialty: t.specialty,
       experience: t.experience,
       bio: t.bio,
@@ -189,6 +215,16 @@ async function seedActivitiesAndContent() {
     })),
   });
   await prisma.galleryImage.createMany({ data: mockGalleryImages.map((g: any) => ({ ...g })) });
+  await prisma.product.createMany({
+    data: mockProducts.map((p: any) => ({
+      name: p.name,
+      category: p.category,
+      price: p.price,
+      stock: p.stock,
+      image: p.image,
+      description: p.description,
+    })),
+  });
   await prisma.paymentProvider.createMany({ data: mockPaymentProviders.map((p: any) => ({ ...p })) });
   await prisma.user.create({
     data: {
@@ -208,7 +244,24 @@ export async function ensureSeed(): Promise<void> {
   if (!seeding) {
     seeding = (async () => {
       const count = await prisma.activity.count();
-      if (count === 0) await seedActivitiesAndContent();
+      if (count === 0) {
+        await seedActivitiesAndContent();
+      } else {
+        // Si les produits ont été supprimés manuellement, on les ré-alimente pour que la boutique ne soit jamais vide
+        const productCount = await prisma.product.count();
+        if (productCount === 0) {
+          await prisma.product.createMany({
+            data: mockProducts.map((p: any) => ({
+              name: p.name,
+              category: p.category,
+              price: p.price,
+              stock: p.stock,
+              image: p.image,
+              description: p.description,
+            })),
+          });
+        }
+      }
     })().catch((error) => {
       seeding = null;
       throw error;
@@ -232,6 +285,8 @@ export async function resetDatabase(): Promise<void> {
     prisma.trainer.deleteMany(),
     prisma.activity.deleteMany(),
     prisma.paymentProvider.deleteMany(),
+    prisma.message.deleteMany(),
+    prisma.notification.deleteMany(),
     prisma.user.deleteMany(),
     prisma.stat.deleteMany(),
   ]);

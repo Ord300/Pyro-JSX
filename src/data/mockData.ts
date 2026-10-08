@@ -15,11 +15,23 @@ export interface Activity {
   priceYear: number;
   image: string;
   icon: string;
+  minAge?: number | null;
+  maxAge?: number | null;
+}
+
+export function formatAgeRange(a: { minAge?: number | null; maxAge?: number | null }): string | null {
+  const min = a.minAge != null && !Number.isNaN(Number(a.minAge)) ? Number(a.minAge) : null;
+  const max = a.maxAge != null && !Number.isNaN(Number(a.maxAge)) ? Number(a.maxAge) : null;
+  if (min != null && max != null) return `De ${min} à ${max} ans`;
+  if (min != null) return `Dès ${min} ans`;
+  if (max != null) return `Jusqu'à ${max} ans`;
+  return null;
 }
 
 export interface Trainer {
   id: number;
   name: string;
+  email: string;
   specialty: string;
   experience: string;
   activities: string[];
@@ -82,6 +94,8 @@ export const mockActivities: Activity[] = [
     priceYear: 450,
     image: "",
     icon: "⚽",
+    minAge: 5,
+    maxAge: 20,
   },
   {
     id: 2,
@@ -159,6 +173,7 @@ export const mockTrainers: Trainer[] = [
   {
     id: 1,
     name: "Sarah Martin",
+    email: "",
     specialty: "Fitness & Cardio",
     experience: "8 ans",
     activities: ["Fitness", "Cardio"],
@@ -169,6 +184,7 @@ export const mockTrainers: Trainer[] = [
   {
     id: 2,
     name: "Amina Koné",
+    email: "",
     specialty: "Yoga & Bien-être",
     experience: "6 ans",
     activities: ["Yoga", "Méditation"],
@@ -179,6 +195,7 @@ export const mockTrainers: Trainer[] = [
   {
     id: 3,
     name: "David Ngoma",
+    email: "",
     specialty: "Musculation & Force",
     experience: "10 ans",
     activities: ["Musculation", "CrossFit"],
@@ -189,6 +206,7 @@ export const mockTrainers: Trainer[] = [
   {
     id: 4,
     name: "Karim Bensalah",
+    email: "",
     specialty: "Boxe & Combat",
     experience: "12 ans",
     activities: ["Boxe", "MMA"],
@@ -199,6 +217,7 @@ export const mockTrainers: Trainer[] = [
   {
     id: 5,
     name: "Coach Mbeki",
+    email: "",
     specialty: "Sports collectifs",
     experience: "9 ans",
     activities: ["Football", "Basketball"],
@@ -408,6 +427,73 @@ export const mockPricingPlans: PricingPlan[] = [
     currency: "USD",
     popular: false,
     features: ["Accès 365 jours", "Toutes les activités", "Vestiaires inclus", "Coaching personnalisé", "Application mobile", "Support VIP 24/7", "2 mois offerts"],
+  },
+];
+
+export interface Product {
+  id: number;
+  name: string;
+  category: string;
+  price: number;
+  stock: number;
+  image: string;
+  description: string;
+}
+
+export const mockProducts: Product[] = [
+  {
+    id: 1,
+    name: "Paire d'haltères 10kg",
+    category: "Musculation",
+    price: 45,
+    stock: 20,
+    image: "https://images.unsplash.com/photo-1583454110551-21f2fa2afe61?q=80&w=600&auto=format&fit=crop",
+    description: "Haltères en fonte avec revêtement antidérapant, idéal pour la musculation à domicile ou en salle.",
+  },
+  {
+    id: 2,
+    name: "Tapis de course Pro",
+    category: "Cardio",
+    price: 650,
+    stock: 5,
+    image: "https://images.unsplash.com/photo-1571019614242-c5c5dee9f50b?q=80&w=600&auto=format&fit=crop",
+    description: "Tapis motorisé pliable avec écran LCD, parfait pour l'entraînement cardio à Kinshasa.",
+  },
+  {
+    id: 3,
+    name: "Vélo elliptique",
+    category: "Cardio",
+    price: 480,
+    stock: 8,
+    image: "https://images.unsplash.com/photo-1599058917212-d750aac44416?q=80&w=600&auto=format&fit=crop",
+    description: "Vélo elliptique silencieux avec résistance réglable et suivi de performance.",
+  },
+  {
+    id: 4,
+    name: "Banc de musculation",
+    category: "Musculation",
+    price: 180,
+    stock: 12,
+    image: "https://images.unsplash.com/photo-1534438327276-14e5300c3a48?q=80&w=600&auto=format&fit=crop",
+    description: "Banc réglable robuste pour développé couché et exercices polyvalents.",
+  },
+  {
+    id: 5,
+    name: "Gants de boxe 14oz",
+    category: "Combat",
+    price: 55,
+    stock: 30,
+    image: "https://images.unsplash.com/photo-1549719386-74dfcbf7dbed?q=80&w=600&auto=format&fit=crop",
+    description: "Gants en cuir synthétique avec protection renforcée pour l'entraînement et le sparring.",
+  },
+  {
+    id: 6,
+    name: "Corde à sauter Pro",
+    category: "Cardio",
+    price: 15,
+    stock: 50,
+    image: "https://images.unsplash.com/photo-1517838277536-f5f99be501cd?q=80&w=600&auto=format&fit=crop",
+    description: "Corde à sauter ajustable avec roulements rapides, idéale pour l'échauffement et le cardio.",
   },
 ];
 

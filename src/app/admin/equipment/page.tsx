@@ -10,14 +10,14 @@ import { Modal } from "@/src/components/ui/Modal";
 import { productsDB } from "@/src/services/dbService";
 import { useToast } from "@/src/contexts/ToastContext";
 
-type Equipment = { id: number; name: string; category: string; price: number; stock: number; image?: string };
+type Equipment = { id: number; name: string; category: string; price: number; stock: number; image?: string; description?: string };
 
 export default function AdminEquipment() {
   const toast = useToast();
   const [search, setSearch] = useState("");
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [editItem, setEditItem] = useState<Equipment | null>(null);
-  const [form, setForm] = useState({ name: "", category: "", price: "", stock: "", image: "" });
+  const [form, setForm] = useState({ name: "", category: "", price: "", stock: "", image: "", description: "" });
   const [equipment, setEquipment] = useState<any[]>([]);
 
   useEffect(() => {
@@ -50,12 +50,12 @@ export default function AdminEquipment() {
     setEquipment((eq) => eq.filter((i: any) => i.id !== id));
   };
 
-  const openCreate = () => { setEditItem(null); setForm({ name: "", category: "", price: "", stock: "", image: "" }); setIsCreateOpen(true); };
-  const openEdit = (item: Equipment) => { setEditItem(item); setForm({ name: item.name, category: item.category, price: String(item.price), stock: String(item.stock), image: item.image || "" }); setIsCreateOpen(true); };
+  const openCreate = () => { setEditItem(null); setForm({ name: "", category: "", price: "", stock: "", image: "", description: "" }); setIsCreateOpen(true); };
+  const openEdit = (item: Equipment) => { setEditItem(item); setForm({ name: item.name, category: item.category, price: String(item.price), stock: String(item.stock), image: item.image || "", description: item.description || "" }); setIsCreateOpen(true); };
 
   const submitForm = async () => {
     if (!form.name.trim() || !form.category.trim() || Number(form.price) <= 0 || Number(form.stock) < 0) return;
-    const payload = { name: form.name.trim(), category: form.category.trim(), price: Number(form.price), stock: Number(form.stock), image: form.image || undefined };
+    const payload = { name: form.name.trim(), category: form.category.trim(), price: Number(form.price), stock: Number(form.stock), image: form.image || undefined, description: form.description.trim() || undefined };
     try {
       if (editItem) {
         await productsDB.update(editItem.id, payload);
@@ -99,6 +99,7 @@ export default function AdminEquipment() {
                   <Badge variant={item.stock <= 5 ? "warning" : "success"}>{item.stock} en stock</Badge>
                 </div>
                 <p className="text-xs text-slate-500 dark:text-slate-400">{item.category}</p>
+                {item.description && <p className="mt-1 line-clamp-2 text-xs text-slate-500 dark:text-slate-400">{item.description}</p>}
                 <p className="mt-3 text-lg font-bold text-primary-600">{item.price.toFixed(2)} USD</p>
                 <div className="mt-4 flex items-center gap-2">
                   <Button size="icon" variant="outline" onClick={() => decreaseStock(item.id)}><Minus className="h-4 w-4" /></Button>
@@ -133,6 +134,10 @@ export default function AdminEquipment() {
           <div>
             <label className="mb-1 block text-sm font-medium">Quantité en stock</label>
             <Input type="number" min="0" value={form.stock} onChange={(event) => setForm({ ...form, stock: event.target.value })} />
+          </div>
+          <div className="sm:col-span-2">
+            <label className="mb-1 block text-sm font-medium">Description</label>
+            <textarea value={form.description} onChange={(event) => setForm({ ...form, description: event.target.value })} placeholder="Description visible sur la boutique..." rows={3} className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500 dark:border-slate-700 dark:bg-slate-800 dark:text-white" />
           </div>
           {form.image && <div className="sm:col-span-2"><p className="mb-1 text-sm font-medium">Aperçu</p><img src={form.image} alt="Aperçu de l'équipement" className="h-36 w-full rounded-lg object-cover" /></div>}
         </div>

@@ -26,6 +26,7 @@
   --color-dark-border: #334155;
 
   --font-sans: "Inter", sans-serif;
+  --font-display: "Barlow Condensed", "Arial Narrow", sans-serif;
 }
 
 @layer base {

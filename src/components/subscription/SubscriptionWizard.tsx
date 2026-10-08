@@ -7,6 +7,7 @@ import { useActivities } from "@/src/hooks/queries/activities";
 import { mockSubscriptionPlans } from "@/src/data/subscriptionData";
 import { mockPaymentProviders } from "@/src/data/paymentData";
 import { processPayment } from "@/src/services/paymentService";
+import { formatAgeRange } from "@/src/data/mockData";
 import type { PaymentMethod } from "@/src/types/payment";
 import { CheckCircle2, ChevronLeft, ChevronRight, Loader2, ShieldCheck } from "lucide-react";
 
@@ -225,6 +226,11 @@ export function SubscriptionWizard({ onComplete, onCancel }: SubscriptionWizardP
               <span>⏱ {activity.duration}</span>
               <span>👥 {activity.capacity} places</span>
             </div>
+            {formatAgeRange(activity) && (
+              <p className="mt-2 inline-flex items-center gap-1 rounded-full bg-amber-50 px-2.5 py-1 text-xs font-medium text-amber-700 dark:bg-amber-900/20 dark:text-amber-300">
+                🎂 {formatAgeRange(activity)}
+              </p>
+            )}
           </button>
         ))}
       </div>

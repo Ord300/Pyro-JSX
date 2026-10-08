@@ -19,6 +19,8 @@ const DB_KEYS = {
   users: "users",
   stats: "stats",
   gallery: "gallery",
+  messages: "messages",
+  notifications: "notifications",
 };
 
 const isBrowser = () => typeof window !== "undefined";
@@ -184,6 +186,15 @@ export const reservationsDB = {
   subscribe: (callback: () => void) => db.subscribe(callback),
 };
 
+export const attendancesDB = {
+  getAll: <T = any>() => db.getAll<T>("attendances"),
+  getById: <T = any>(id: number) => db.getById<T>("attendances", id),
+  create: <T = any>(data: any) => db.create<T>("attendances", data),
+  update: <T = any>(id: number, data: any) => db.update<T>("attendances", id, data),
+  delete: (id: number) => db.delete("attendances", id),
+  subscribe: (callback: () => void) => db.subscribe(callback),
+};
+
 export const timeSlotsDB = {
   getAll: <T = any>() => db.getAll<T>(DB_KEYS.timeSlots),
   setAll: (items: any[]) => db.setAll(DB_KEYS.timeSlots, items),
@@ -215,6 +226,24 @@ export const galleryDB = {
   update: <T = any>(id: number, data: any) => db.update<T>(DB_KEYS.gallery, id, data),
   delete: (id: number) => db.delete(DB_KEYS.gallery, id),
   setAll: (items: any[]) => db.setAll(DB_KEYS.gallery, items),
+  subscribe: (callback: () => void) => db.subscribe(callback),
+};
+
+export const messagesDB = {
+  getAll: <T = any>() => db.getAll<T>(DB_KEYS.messages),
+  getById: <T = any>(id: number) => db.getById<T>(DB_KEYS.messages, id),
+  create: <T = any>(data: any) => db.create<T>(DB_KEYS.messages, data),
+  update: <T = any>(id: number, data: any) => db.update<T>(DB_KEYS.messages, id, data),
+  delete: (id: number) => db.delete(DB_KEYS.messages, id),
+  subscribe: (callback: () => void) => db.subscribe(callback),
+};
+
+export const notificationsDB = {
+  getAll: <T = any>() => db.getAll<T>(DB_KEYS.notifications),
+  getById: <T = any>(id: number) => db.getById<T>(DB_KEYS.notifications, id),
+  create: <T = any>(data: any) => db.create<T>(DB_KEYS.notifications, data),
+  update: <T = any>(id: number, data: any) => db.update<T>(DB_KEYS.notifications, id, data),
+  delete: (id: number) => db.delete(DB_KEYS.notifications, id),
   subscribe: (callback: () => void) => db.subscribe(callback),
 };
 

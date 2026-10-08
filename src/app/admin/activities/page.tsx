@@ -1,44 +1,79 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Plus, Edit2, Trash2, Search } from "lucide-react";
+import { Plus, Edit2, Trash2, Search, UserRound, Cake } from "lucide-react";
 import { Button } from "@/src/components/ui/Button";
 import { Input } from "@/src/components/ui/Input";
 import { Badge } from "@/src/components/ui/Badge";
 import { Modal } from "@/src/components/ui/Modal";
 import { useActivities, useCreateActivity, useUpdateActivity, useDeleteActivity } from "@/src/hooks/queries/activities";
+import { useTrainers } from "@/src/hooks/queries/trainers";
 import type { Activity } from "@/src/data/mockData";
+import { formatAgeRange } from "@/src/data/mockData";
 
 export default function AdminActivities() {
   const [activities, setActivities] = useState<Activity[]>([]);
   const [search, setSearch] = useState("");
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editItem, setEditItem] = useState<Activity | null>(null);
-  const [form, setForm] = useState({ name: "", category: "", description: "", trainer: "", duration: "", capacity: "", priceWeek: "", priceMonth: "", priceYear: "", icon: "🏆", image: "" });
+  const [form, setForm] = useState({ name: "", category: "", description: "", trainer: "", duration: "", capacity: "", priceWeek: "", priceMonth: "", priceYear: "", icon: "🏆", image: "", minAge: "", maxAge: "" });
 
   const { data: activitiesData = [], isLoading } = useActivities();
+  const { data: trainersData = [] } = useTrainers();
   const createActivity = useCreateActivity();
   const updateActivity = useUpdateActivity();
   const deleteActivity = useDeleteActivity();
 
   useEffect(() => { setActivities(activitiesData); }, [activitiesData]);
 
-  const filtered = activities.filter((a) =>
-    a.name.toLowerCase().includes(search.toLowerCase()) ||
-    a.category.toLowerCase().includes(search.toLowerCase())
-  );
+  // Coaches assignés à une activité : croise le champ `trainer` de l'activité
+  // avec les entraîneurs qui ont cette activité dans leur liste (module Entraîneurs).
+  const getCoaches = (a: Activity): string[] => {
+    const fromTrainers = (trainersData ?? [])
+      .filter((t) => (t.activities ?? []).includes(a.name))
+      .map((t) => t.name);
+    const names = [...fromTrainers];
+    if (a.trainer?.trim() && !names.includes(a.trainer.trim())) names.push(a.trainer.trim());
+    return names;
+  };
 
-  const openCreate = () => { setEditItem(null); setForm({ name: "", category: "", description: "", trainer: "", duration: "", capacity: "", priceWeek: "", priceMonth: "", priceYear: "", icon: "🏆", image: "" }); setIsModalOpen(true); };
-  const openEdit = (a: Activity) => { setEditItem(a); setForm({ name: a.name, category: a.category, description: a.description, trainer: a.trainer, duration: a.duration, capacity: String(a.capacity), priceWeek: String(a.priceWeek), priceMonth: String(a.priceMonth), priceYear: String(a.priceYear), icon: a.icon, image: a.image?.startsWith("data:") || a.image?.startsWith("http") ? a.image : "" }); setIsModalOpen(true); };
+  const filtered = activities.filter((a) => {
+    const q = search.toLowerCase();
+    return (
+      a.name.toLowerCase().includes(q) ||
+      a.category.toLowerCase().includes(q) ||
+      getCoaches(a).some((c) => c.toLowerCase().includes(q))
+    );
+  });
+
+  const openCreate = () => { setEditItem(null); setForm({ name: "", category: "", description: "", trainer: "", duration: "", capacity: "", priceWeek: "", priceMonth: "", priceYear: "", icon: "🏆", image: "", minAge: "", maxAge: "" }); setIsModalOpen(true); };
+  const openEdit = (a: Activity) => { setEditItem(a); setForm({ name: a.name, category: a.category, description: a.description, trainer: a.trainer, duration: a.duration, capacity: String(a.capacity), priceWeek: String(a.priceWeek), priceMonth: String(a.priceMonth), priceYear: String(a.priceYear), icon: a.icon, image: a.image?.startsWith("data:") || a.image?.startsWith("http") ? a.image : "", minAge: a.minAge != null ? String(a.minAge) : "", maxAge: a.maxAge != null ? String(a.maxAge) : "" }); setIsModalOpen(true); };
   const handleDelete = async (id: number) => { if (!confirm("Supprimer cette activité ?")) return; await deleteActivity.mutateAsync(id); };
 
+  const parseAge = (v: string): number | null => {
+    const t = v.trim();
+    if (!t) return null;
+    const n = Number(t);
+    if (!Number.isInteger(n) || n < 0 || n > 120) return NaN as unknown as null;
+    return n;
+  };
+
   const handleSave = async () => {
-    if (editItem) {
-      await updateActivity.mutateAsync({ id: editItem.id, data: { ...form, capacity: Number(form.capacity), priceWeek: Number(form.priceWeek), priceMonth: Number(form.priceMonth), priceYear: Number(form.priceYear) } as any });
-    } else {
-      await createActivity.mutateAsync({ ...form, capacity: Number(form.capacity), priceWeek: Number(form.priceWeek), priceMonth: Number(form.priceMonth), priceYear: Number(form.priceYear) } as any);
+    const minAge = parseAge(form.minAge);
+    const maxAge = parseAge(form.maxAge);
+    if (minAge !== null && (Number.isNaN(minAge as any) || minAge! < 0)) { alert("Âge minimum invalide (0-120)."); return; }
+    if (maxAge !== null && (Number.isNaN(maxAge as any) || maxAge! < 0)) { alert("Âge maximum invalide (0-120)."); return; }
+    if (minAge != null && maxAge != null && (minAge as number) > (maxAge as number)) { alert("L'âge minimum ne peut pas dépasser l'âge maximum."); return; }
+    try {
+      if (editItem) {
+        await updateActivity.mutateAsync({ id: editItem.id, data: { ...form, capacity: Number(form.capacity), priceWeek: Number(form.priceWeek), priceMonth: Number(form.priceMonth), priceYear: Number(form.priceYear), minAge, maxAge } as any });
+      } else {
+        await createActivity.mutateAsync({ ...form, capacity: Number(form.capacity), priceWeek: Number(form.priceWeek), priceMonth: Number(form.priceMonth), priceYear: Number(form.priceYear), minAge, maxAge } as any);
+      }
+      setIsModalOpen(false);
+    } catch (e: any) {
+      alert(e?.message || "Enregistrement impossible.");
     }
-    setIsModalOpen(false);
   };
 
   return (
@@ -70,6 +105,26 @@ export default function AdminActivities() {
                 </div>
               </div>
               <p className="mt-2 text-xs text-slate-500 dark:text-slate-400 line-clamp-2">{a.description}</p>
+              {formatAgeRange(a) && (
+                <p className="mt-2 inline-flex items-center gap-1.5 rounded-full bg-amber-50 px-2.5 py-1 text-xs font-medium text-amber-700 dark:bg-amber-900/20 dark:text-amber-300">
+                  <Cake className="h-3 w-3" />{formatAgeRange(a)}
+                </p>
+              )}
+              <div className="mt-3 flex items-center gap-2 rounded-lg bg-slate-50 px-2.5 py-2 dark:bg-slate-800">
+                <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-primary-500 to-primary-700 text-[10px] font-bold text-white">
+                  {getCoaches(a).length > 0 ? getCoaches(a)[0].split(" ").map((n) => n[0]).join("").slice(0, 2).toUpperCase() : <UserRound className="h-3.5 w-3.5" />}
+                </span>
+                <div className="min-w-0">
+                  <p className="text-[10px] uppercase tracking-wide text-slate-400">Coach assigné</p>
+                  {getCoaches(a).length > 0 ? (
+                    <p className="truncate text-xs font-medium text-slate-700 dark:text-slate-200" title={getCoaches(a).join(", ")}>
+                      {getCoaches(a).join(", ")}
+                    </p>
+                  ) : (
+                    <p className="text-xs italic text-slate-400">Aucun coach assigné</p>
+                  )}
+                </div>
+              </div>
               <div className="mt-3 grid grid-cols-3 gap-1 text-xs text-center">
                 <div className="rounded-md bg-slate-50 dark:bg-slate-800 p-1.5"><p className="font-bold text-primary-600">${a.priceWeek}</p><p className="text-slate-400">sem.</p></div>
                 <div className="rounded-md bg-slate-50 dark:bg-slate-800 p-1.5"><p className="font-bold text-primary-600">${a.priceMonth}</p><p className="text-slate-400">mois</p></div>
@@ -94,7 +149,6 @@ export default function AdminActivities() {
           {[
             { id: "name", label: "Nom", placeholder: "Football" },
             { id: "category", label: "Catégorie", placeholder: "Sport collectif" },
-            { id: "trainer", label: "Entraîneur", placeholder: "Coach Mbeki" },
             { id: "duration", label: "Durée", placeholder: "90 min" },
             { id: "capacity", label: "Capacité", placeholder: "22" },
             { id: "icon", label: "Icône (emoji)", placeholder: "⚽" },
@@ -104,6 +158,22 @@ export default function AdminActivities() {
               <Input placeholder={placeholder} value={(form as any)[id]} onChange={(e) => setForm({ ...form, [id]: e.target.value })} />
             </div>
           ))}
+          <div className="space-y-1.5">
+            <label className="text-sm font-medium text-slate-700 dark:text-slate-300">Coach assigné</label>
+            <select
+              value={form.trainer}
+              onChange={(e) => setForm({ ...form, trainer: e.target.value })}
+              className="flex w-full rounded-md border border-slate-300 bg-transparent px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent dark:border-slate-700 dark:text-slate-50 dark:bg-slate-900"
+            >
+              <option value="">— Aucun coach —</option>
+              {trainersData.map((t) => (
+                <option key={t.id} value={t.name}>
+                  {t.name} — {t.specialty}
+                </option>
+              ))}
+            </select>
+            <p className="text-xs text-slate-400">Ou assignez cette activité depuis le module Entraîneurs.</p>
+          </div>
           <div className="sm:col-span-2 space-y-1.5">
             <label className="text-sm font-medium text-slate-700 dark:text-slate-300">Description</label>
             <textarea rows={2} value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} placeholder="Description de l'activité…"
@@ -121,6 +191,14 @@ export default function AdminActivities() {
           <div className="space-y-1.5">
             <label className="text-sm font-medium text-slate-700 dark:text-slate-300">Prix / mois ($)</label>
             <Input type="number" value={form.priceMonth} onChange={(e) => setForm({ ...form, priceMonth: e.target.value })} />
+          </div>
+          <div className="space-y-1.5">
+            <label className="text-sm font-medium text-slate-700 dark:text-slate-300">Âge min. d'inscription <span className="font-normal text-slate-400">(optionnel)</span></label>
+            <Input type="number" min={0} max={120} placeholder="Ex : 5" value={form.minAge} onChange={(e) => setForm({ ...form, minAge: e.target.value })} />
+          </div>
+          <div className="space-y-1.5">
+            <label className="text-sm font-medium text-slate-700 dark:text-slate-300">Âge max. d'inscription <span className="font-normal text-slate-400">(optionnel)</span></label>
+            <Input type="number" min={0} max={120} placeholder="Ex : 20" value={form.maxAge} onChange={(e) => setForm({ ...form, maxAge: e.target.value })} />
           </div>
           <div className="sm:col-span-2 space-y-1.5">
             <label className="text-sm font-medium text-slate-700 dark:text-slate-300">Prix / an ($)</label>

@@ -3,17 +3,29 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useActivities } from "@/src/hooks/queries/activities";
+import { useTrainers } from "@/src/hooks/queries/trainers";
 import { useScrollReveal } from "@/src/hooks/useScrollReveal";
 import { Badge } from "@/src/components/ui/Badge";
 import { Card, CardContent } from "@/src/components/ui/Card";
 import { Button } from "@/src/components/ui/Button";
-import { Clock, Users, Sparkles, SearchX } from "lucide-react";
+import { Clock, Users, Sparkles, SearchX, Cake } from "lucide-react";
+import { formatAgeRange } from "@/src/data/mockData";
 
 export default function Activities() {
   const { data: activities = [] } = useActivities();
+  const { data: trainers = [] } = useTrainers();
   const categories = [...new Set(activities.map((a) => a.category))];
   const [selected, setSelected] = useState("Tous");
   useScrollReveal();
+
+  const getCoaches = (activity: { name: string; trainer?: string }): string[] => {
+    const fromTrainers = (trainers ?? [])
+      .filter((t) => (t.activities ?? []).includes(activity.name))
+      .map((t) => t.name);
+    const names = [...fromTrainers];
+    if (activity.trainer?.trim() && !names.includes(activity.trainer.trim())) names.push(activity.trainer.trim());
+    return names;
+  };
 
   const filtered = selected === "Tous" ? activities : activities.filter((a) => a.category === selected);
 
@@ -91,12 +103,17 @@ export default function Activities() {
                     <span className="inline-flex items-center gap-1 rounded-full bg-slate-100 px-2.5 py-1 text-xs text-slate-600 dark:bg-slate-800 dark:text-slate-300"><Clock className="h-3 w-3" />{activity.duration}</span>
                     <span className="inline-flex items-center gap-1 rounded-full bg-slate-100 px-2.5 py-1 text-xs text-slate-600 dark:bg-slate-800 dark:text-slate-300"><Users className="h-3 w-3" />{activity.capacity} pers.</span>
                   </div>
+                  {formatAgeRange(activity) && (
+                    <div className="mt-2">
+                      <span className="inline-flex items-center gap-1 rounded-full bg-amber-50 px-2.5 py-1 text-xs font-medium text-amber-700 dark:bg-amber-900/20 dark:text-amber-300"><Cake className="h-3 w-3" />{formatAgeRange(activity)}</span>
+                    </div>
+                  )}
 
                   <div className="mt-3 flex items-center gap-2">
                     <div className="flex h-7 w-7 items-center justify-center rounded-full bg-gradient-to-br from-primary-500 to-primary-700 text-[10px] font-bold text-white">
-                      {activity.trainer?.split(" ").map((n: string) => n[0]).join("").slice(0, 2)}
+                      {getCoaches(activity).length > 0 ? getCoaches(activity)[0]?.split(" ").map((n: string) => n[0]).join("").slice(0, 2) : "—"}
                     </div>
-                    <p className="truncate text-xs text-slate-500 dark:text-slate-400">Coach <span className="font-medium text-slate-700 dark:text-slate-200">{activity.trainer}</span></p>
+                    <p className="truncate text-xs text-slate-500 dark:text-slate-400">Coach <span className="font-medium text-slate-700 dark:text-slate-200">{getCoaches(activity).length > 0 ? getCoaches(activity).join(", ") : "Non assigné"}</span></p>
                   </div>
 
                   <div className="mt-4 flex items-center justify-between border-t border-slate-100 pt-3 dark:border-slate-800">

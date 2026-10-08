@@ -5,20 +5,26 @@ import { usePathname } from "next/navigation";
 import {
   Dumbbell,
   LayoutDashboard,
+  Activity,
   CreditCard,
   Bell,
   History,
+  MessageSquare,
   User,
-  FileText
+  FileText,
+  ShoppingBag
 } from "lucide-react";
 import { cn } from "@/src/utils/cn";
 
 const menuItems = [
   { name: "Dashboard", path: "/dashboard", icon: LayoutDashboard },
   { name: "Mon abonnement", path: "/dashboard/subscription", icon: CreditCard },
+  { name: "Activités", path: "/dashboard/activities", icon: Activity },
+  { name: "Équipements", path: "/dashboard/equipment", icon: ShoppingBag },
   { name: "Reçus", path: "/dashboard/receipts", icon: FileText },
   { name: "Historique", path: "/dashboard/history", icon: History },
   { name: "Notifications", path: "/dashboard/notifications", icon: Bell },
+  { name: "Messages", path: "/dashboard/messages", icon: MessageSquare },
   { name: "Profil", path: "/dashboard/profile", icon: User },
 ];
 

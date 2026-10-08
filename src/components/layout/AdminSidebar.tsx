@@ -14,9 +14,12 @@ import {
   Settings,
   Activity,
   Box,
-  Image
+  Image,
+  LogOut
 } from "lucide-react";
 import { cn } from "@/src/utils/cn";
+import { useAuth } from "@/src/contexts/AuthContext";
+import { useRouter } from "next/navigation";
 
 const menuGroups = [
   {
@@ -64,6 +67,13 @@ const menuGroups = [
 
 export function AdminSidebar({ isOpen, setIsOpen }: { isOpen: boolean; setIsOpen: (val: boolean) => void }) {
   const pathname = usePathname();
+  const { user, logout } = useAuth();
+  const router = useRouter();
+
+  const handleLogout = () => {
+    logout();
+    router.push("/login");
+  };
 
   return (
     <>
@@ -129,7 +139,25 @@ export function AdminSidebar({ isOpen, setIsOpen }: { isOpen: boolean; setIsOpen
           ))}
         </div>
 
-        <div className="border-t border-violet-500/15 p-4">
+        <div className="border-t border-violet-500/15 p-4 space-y-3">
+          {user && (
+            <div className="flex items-center gap-3 px-3">
+              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-violet-500 to-fuchsia-600 text-sm font-bold text-white">
+                {(user.name?.[0] ?? user.email?.[0] ?? "A").toUpperCase()}
+              </div>
+              <div className="min-w-0 flex-1">
+                <p className="truncate text-sm font-medium text-slate-200">{user.name ?? "Admin"}</p>
+                <p className="truncate text-xs text-slate-500">{user.email ?? ""}</p>
+              </div>
+            </div>
+          )}
+          <button
+            onClick={handleLogout}
+            className="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium text-slate-400 transition-colors hover:bg-red-500/10 hover:text-red-300"
+          >
+            <LogOut className="h-5 w-5" />
+            Déconnexion
+          </button>
           <p className="px-3 text-xs text-slate-500">MoveUp · Console d&apos;administration</p>
         </div>
       </aside>

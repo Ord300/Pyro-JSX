@@ -38,12 +38,12 @@ function Stars({ rating }: { rating: number }) {
 }
 
 const HERO_IMAGES = [
-  "https://images.unsplash.com/photo-1534438327276-14e5300c3a48?q=80&w=1600&auto=format&fit=crop",
-  "https://images.unsplash.com/photo-1517836357463-d25dfeac3438?q=80&w=1600&auto=format&fit=crop",
-  "https://images.unsplash.com/photo-1571902943202-507ec2618e8f?q=80&w=1600&auto=format&fit=crop",
-  "https://images.unsplash.com/photo-1593079831268-3381b0db4a77?q=80&w=1600&auto=format&fit=crop",
-  "https://images.unsplash.com/photo-1546483875-ad9014c88eba?q=80&w=1600&auto=format&fit=crop",
-  "https://images.unsplash.com/photo-1574680096145-d05b474e2155?q=80&w=1600&auto=format&fit=crop",
+  "/hero-salle.jpg",
+  "/hero-foot.jpg",
+  "/hero-basket.jpg",
+  "/hero-yoga.jpg",
+  "/hero-basket-2.jpg",
+  "/equipe-aigles.jpg",
 ];
 
 export default function Home() {
@@ -79,7 +79,7 @@ export default function Home() {
   return (
     <div className="min-h-screen">
       {/* ── HERO ── */}
-      <section className="relative flex min-h-[50vh] items-center justify-center overflow-hidden bg-primary-950 px-6 py-10">
+      <section className="relative flex min-h-[50vh] items-center justify-center overflow-hidden bg-primary-950 px-6 py-12">
         {/* Images des installations qui défilent en arrière-plan */}
         {HERO_IMAGES.map((img, i) => (
           <div
@@ -88,7 +88,7 @@ export default function Home() {
           >
             <img
               src={img}
-              alt={`Installation sportive ${i + 1}`}
+              alt={`Photo centre sportif ${i + 1}`}
               className={`h-full w-full object-cover ${i === heroSlide ? "animate-[hero-zoom_8s_ease-out_forwards]" : ""}`}
             />
           </div>
@@ -182,8 +182,8 @@ export default function Home() {
       {/* ── SECTION BANNIÈRE IMAGE ── */}
       <section className="relative overflow-hidden py-24 px-6 lg:px-8">
         <img
-          src="https://images.unsplash.com/photo-1526506118085-60ce8714f8c5?q=80&w=2000&auto=format&fit=crop"
-          alt="Entraînement salle de sport"
+          src="/equipe-aigles-2.jpg"
+          alt="Les joueurs des Aigles du Congo sur la pelouse"
           className="absolute inset-0 h-full w-full object-cover"
         />
         <div className="absolute inset-0 bg-primary-900/70" />

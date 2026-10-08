@@ -10,12 +10,12 @@ import { Card, CardContent } from "@/src/components/ui/Card";
 import { useAuth } from "@/src/contexts/AuthContext";
 
 const FACILITY_IMAGES = [
-  "https://images.unsplash.com/photo-1534438327276-14e5300c3a48?q=80&w=800&auto=format&fit=crop",
-  "https://images.unsplash.com/photo-1517836357463-d25dfeac3438?q=80&w=800&auto=format&fit=crop",
-  "https://images.unsplash.com/photo-1571902943202-507ec2618e8f?q=80&w=800&auto=format&fit=crop",
-  "https://images.unsplash.com/photo-1593079831268-3381b0db4a77?q=80&w=800&auto=format&fit=crop",
-  "https://images.unsplash.com/photo-1546483875-ad9014c88eba?q=80&w=800&auto=format&fit=crop",
-  "https://images.unsplash.com/photo-1574680096145-d05b474e2155?q=80&w=800&auto=format&fit=crop",
+  "/hero-salle.jpg",
+  "/hero-foot.jpg",
+  "/hero-basket.jpg",
+  "/hero-yoga.jpg",
+  "/hero-basket-2.jpg",
+  "/equipe-aigles.jpg",
 ];
 
 export default function Login() {
@@ -59,8 +59,10 @@ export default function Login() {
       return;
     }
     const user = (res as any).user ?? auth.user;
-    if (user?.role === "Gestionnaire") router.push("/admin");
-    else router.push(user?.mustChangePassword ? "/change-password" : "/dashboard");
+    if (user?.mustChangePassword) router.push("/change-password");
+    else if (user?.role === "Gestionnaire") router.push("/admin");
+    else if (user?.role === "Entraîneur") router.push("/trainer");
+    else router.push("/dashboard");
   };
 
   return (

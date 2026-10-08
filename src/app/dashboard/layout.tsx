@@ -35,6 +35,9 @@ export default function UserLayout({
     if (!isLoading && user?.mustChangePassword) {
       redirect("/change-password");
     }
+    if (!isLoading && user?.role === "Entraîneur") {
+      redirect("/trainer");
+    }
   }, [isLoading, user]);
 
   if (isLoading) {

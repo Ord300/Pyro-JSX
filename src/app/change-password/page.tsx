@@ -22,7 +22,9 @@ export default function ChangePassword() {
     const user = email && users.find((item) => item.email.toLowerCase() === email);
     if (!user) return router.push("/login");
     await usersDB.update(user.id, { password, mustChangePassword: false });
-    router.push("/dashboard");
+    if (user.role === "Gestionnaire") router.push("/admin");
+    else if (user.role === "Entraîneur") router.push("/trainer");
+    else router.push("/dashboard");
   };
   return (
     <div className="flex min-h-screen items-center justify-center bg-slate-50 px-4 dark:bg-slate-950">

@@ -8,6 +8,7 @@ import { Badge } from "@/src/components/ui/Badge";
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/src/components/ui/Table";
 import { Modal } from "@/src/components/ui/Modal";
 import { subscriptionFlow } from "@/src/services/subscriptionFlowService";
+import { notificationsDB } from "@/src/services/dbService";
 
 type ReqStatus = "En attente" | "Confirmée" | "Refusée";
 
@@ -43,7 +44,22 @@ export default function AdminRequests() {
 
   const updateStatus = async (id: string, status: ReqStatus) => {
     setRequests((prev) => prev.map((r) => (r.id === id ? { ...r, status } : r)));
+    const target = requests.find((r) => r.id === id);
     await subscriptionFlow.setRequestStatus(Number(id), status as any);
+    if (target?.email) {
+      await notificationsDB.create({
+        userEmail: target.email.toLowerCase(),
+        title: status === "Confirmée" ? "Demande d'abonnement confirmée" : "Demande d'abonnement refusée",
+        message:
+          status === "Confirmée"
+            ? `Bonne nouvelle ${target.name} ! Votre demande a été confirmée. Finalisez votre abonnement depuis la page de vérification ou le module Activités.`
+            : `Bonjour ${target.name}, votre demande a été refusée par l'administration. Contactez-nous via la messagerie pour plus d'informations.`,
+        type: status === "Confirmée" ? "success" : "warning",
+        audience: "Suivi de demande",
+        createdAt: new Date().toISOString(),
+        read: false,
+      });
+    }
     setSelected(null);
   };
 

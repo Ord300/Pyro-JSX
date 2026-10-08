@@ -1,3 +1,0 @@
-module.exports=[54333,(a,b,c)=>{let{createClientModuleProxy:d}=a.r(68257);a.n(d("[project]/Téléchargements/projet IA/centre sport/node_modules/next/dist/client/components/builtin/global-error.js <module evaluation>"))},35094,(a,b,c)=>{let{createClientModuleProxy:d}=a.r(68257);a.n(d("[project]/Téléchargements/projet IA/centre sport/node_modules/next/dist/client/components/builtin/global-error.js"))},73546,a=>{"use strict";a.i(54333);var b=a.i(35094);a.n(b)}];
-
-//# sourceMappingURL=a426b_next_dist_client_components_builtin_global-error_22deef84.js.map

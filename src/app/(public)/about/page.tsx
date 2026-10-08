@@ -51,20 +51,20 @@ export default function About() {
         <div className="relative z-10 mx-auto max-w-6xl px-6 lg:px-8 flex flex-col lg:flex-row items-center gap-10">
           <div className="flex-1 text-center lg:text-left">
             <Badge className="mb-4 inline-flex items-center gap-1.5 bg-white/20 text-white backdrop-blur-sm reveal reveal-visible">
-              <Sparkles className="h-3.5 w-3.5" /> À propos
+              <Sparkles className="h-3.5 w-3.5" /> Centre sportif • Les Samouraïs
             </Badge>
-            <h1 className="text-4xl font-extrabold leading-tight mb-4 reveal">Un centre sportif pensé pour votre progression</h1>
-            <p className="text-lg text-primary-100 mb-6 reveal delay-200">Nous offrons un espace moderne, sécurisé et connecté pour pratiquer vos activités préférées, encadré par des professionnels passionnés.</p>
+            <h1 className="text-4xl font-extrabold leading-tight mb-4 reveal">Le centre sportif du FC Les Aigles du Congo</h1>
+            <p className="text-lg text-primary-100 mb-6 reveal delay-200">Centre sportif officiel du Football Club Les Aigles du Congo, fondé le 21 août 2023 à Kinshasa. Champion de la Linafoot Ligue 1 2024-2025.</p>
             <div className="flex flex-col sm:flex-row justify-center lg:justify-start gap-3 reveal delay-300">
               <Link href="/activities"><Button className="bg-white text-primary-700 hover:bg-primary-50">Découvrir nos activités</Button></Link>
               <Link href="/register"><Button variant="outline" className="text-white border-white/40 hover:bg-white/10">Devenir membre</Button></Link>
             </div>
           </div>
-          <div className="flex-1 reveal-right">
+          <div className="hidden flex-1 reveal-right lg:block">
             <img
-              src="https://images.unsplash.com/photo-1517963879433-6ad2b056d712?q=80&w=1200&auto=format&fit=crop"
-              alt="Centre sportif moderne"
-              className="w-full rounded-xl shadow-2xl object-cover img-zoom"
+              src="/aigles-logo.png"
+              alt="Blason du FC Les Aigles du Congo"
+              className="mx-auto w-full max-w-[280px] object-contain img-zoom max-h-[280px] drop-shadow-2xl"
             />
           </div>
         </div>
@@ -76,25 +76,25 @@ export default function About() {
           <div className="reveal-left">
             <div className="relative">
               <img
-                src="https://images.unsplash.com/photo-1534438327276-14e5300c3a48?q=80&w=1200&auto=format&fit=crop"
-                alt="Nos installations sportives"
+                src="/equipe-aigles.jpg"
+                alt="L'équipe première des Aigles du Congo, championne de la Linafoot Ligue 1 2024-2025"
                 className="w-full rounded-xl shadow-xl object-cover img-zoom"
               />
               <div className="absolute -bottom-5 -right-3 sm:-right-5 rounded-xl bg-primary-600 px-5 py-4 text-white shadow-lg ring-4 ring-background dark:ring-dark-background">
-                <p className="text-2xl font-extrabold">10+</p>
-                <p className="text-xs text-primary-100">Années d'expérience</p>
+                <p className="text-2xl font-extrabold">2023</p>
+                <p className="text-xs text-primary-100">Fondation à Kinshasa</p>
               </div>
             </div>
           </div>
           <div className="reveal-right delay-200">
-            <Badge variant="default" className="mb-3 bg-primary-50 text-primary-700 dark:bg-primary-900/30 dark:text-primary-300">Qui sommes-nous ?</Badge>
-            <h2 className="text-3xl font-bold mb-3 text-slate-900 dark:text-white">Bien plus qu'une simple salle de sport</h2>
-            <p className="text-slate-600 dark:text-slate-400 mb-6 leading-relaxed">Notre centre sportif regroupe des installations modernes et un encadrement d'experts. Nous accompagnons les sportifs de tous niveaux, du loisir à la compétition.</p>
+            <Badge variant="default" className="mb-3 bg-primary-50 text-primary-700 dark:bg-primary-900/30 dark:text-primary-300">Qui sommes-nous ? • Les Aigles du Congo</Badge>
+            <h2 className="text-3xl font-bold mb-3 text-slate-900 dark:text-white">Bien plus qu'un club : un centre omnisports</h2>
+            <p className="text-slate-600 dark:text-slate-400 mb-6 leading-relaxed">Basé à Kinshasa, le centre sportif du FC Les Aigles du Congo « Les Samouraïs » réunit football masculin, football féminin, volleyball et handball, avec son académie (6 à 19 ans) et le complexe multisports de 80 hectares à N'sele.</p>
             <ul className="space-y-3">
               {[
-                { icon: Target, title: "Vision", text: "Favoriser l'accès au sport pour tous, avec une expérience numérique fluide." },
-                { icon: ShieldCheck, title: "Engagement", text: "Sécurité, propreté, et accompagnement personnalisé." },
-                { icon: Clock, title: "Disponibilité", text: "Ouvert 7j/7 avec des créneaux adaptés à tous les emplois du temps." },
+                { icon: Target, title: "Formation d'abord", text: "Détection, formation et scolarité des jeunes athlètes congolais, garçons et filles." },
+                { icon: ShieldCheck, title: "Champion RDC 2024-2025", text: "Premier titre national, 35 points en play-offs. Plus jeune champion de l'histoire." },
+                { icon: Clock, title: "Ancrage à Kinshasa", text: "Stade des Martyrs et Stade Tata Raphaël. Contact : contact@lesaiglesducongo.cd." },
               ].map(({ icon: Icon, title, text }, i) => (
                 <li key={title} className={`flex items-start gap-4 rounded-xl border border-slate-100 bg-slate-50 p-4 transition-shadow hover:shadow-md dark:border-slate-800 dark:bg-slate-900/50 reveal ${i === 0 ? "" : i === 1 ? "delay-100" : "delay-200"}`}>
                   <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-primary-100 dark:bg-primary-900/40">
@@ -122,7 +122,7 @@ export default function About() {
         <section className="mb-20">
           <div className="text-center mb-10 reveal">
             <Badge variant="default" className="mb-3 bg-primary-50 text-primary-700 dark:bg-primary-900/30 dark:text-primary-300">Notre mission</Badge>
-            <h3 className="text-3xl font-bold text-slate-900 dark:text-white">Permettre à chacun de pratiquer régulièrement et progresser</h3>
+            <h3 className="text-3xl font-bold text-slate-900 dark:text-white">L'équipe première donne de la visibilité, la formation donne de l'avenir</h3>
           </div>
           <Card className="overflow-hidden reveal-scale">
             <div className="grid grid-cols-1 md:grid-cols-[auto_1fr] gap-6 p-8 items-center">
@@ -130,10 +130,10 @@ export default function About() {
                 <Target className="h-8 w-8 text-white" />
               </div>
               <div className="text-center md:text-left">
-                <p className="font-bold text-lg text-slate-900 dark:text-white">Notre engagement</p>
-                <p className="text-slate-600 dark:text-slate-400 mt-2 leading-relaxed">Nos programmes et services sont pensés pour simplifier l'accès au sport et suivre l'évolution de chaque membre, avec des équipements de dernière génération et un suivi personnalisé.</p>
+                <p className="font-bold text-lg text-slate-900 dark:text-white">« Nous avons plus de rêves que d'objectifs »</p>
+                <p className="text-slate-600 dark:text-slate-400 mt-2 leading-relaxed">Devise du fondateur Vidiye Tshimanga. Le projet des Samouraïs allie jeu offensif, école sport-études au centre de N'sele et représentation de la RDC en Ligue des Champions CAF.</p>
                 <div className="mt-5 flex flex-wrap justify-center md:justify-start gap-2">
-                  {["Équipements modernes", "Suivi personnalisé", "Communauté active"].map((chip) => (
+                  {["Champion RDC 2024-2025", "Club omnisports", "Académie 6-19 ans"].map((chip) => (
                     <span key={chip} className="inline-flex items-center gap-1.5 rounded-full bg-primary-50 px-3.5 py-1.5 text-xs font-semibold text-primary-700 dark:bg-primary-900/30 dark:text-primary-300">
                       <Award className="h-3.5 w-3.5" />{chip}
                     </span>
@@ -148,15 +148,15 @@ export default function About() {
         <section className="mb-20">
           <div className="text-center mb-10 reveal">
             <Badge variant="default" className="mb-3 bg-primary-50 text-primary-700 dark:bg-primary-900/30 dark:text-primary-300">Nos valeurs</Badge>
-            <h3 className="text-3xl font-bold text-slate-900 dark:text-white">Ce qui nous guide</h3>
-            <p className="mt-3 text-slate-500 dark:text-slate-400 max-w-xl mx-auto">Quatre principes fondamentaux qui orientent chacune de nos décisions au quotidien.</p>
+            <h3 className="text-3xl font-bold text-slate-900 dark:text-white">Quatre convictions des Samouraïs</h3>
+            <p className="mt-3 text-slate-500 dark:text-slate-400 max-w-xl mx-auto">Le projet sportif des Aigles du Congo, fondé le 21 août 2023 à Kinshasa.</p>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
             {[
-              { icon: Dumbbell, title: "Excellence", text: "Toujours viser la qualité et la performance.", delay: "" },
-              { icon: Users, title: "Respect", text: "Esprit d'équipe et fair-play.", delay: "delay-100" },
-              { icon: Heart, title: "Accessibilité", text: "Sport pour tous, sans exception.", delay: "delay-200" },
-              { icon: Globe, title: "Innovation", text: "Expérience connectée et numérique.", delay: "delay-300" },
+              { icon: Dumbbell, title: "Former d'abord", text: "La vocation du club est la formation des jeunes athlètes congolais.", delay: "" },
+              { icon: Users, title: "Structurer durablement", text: "Complexe de 80 ha à N'sele, école sport-études et encadrement médical.", delay: "delay-100" },
+              { icon: Heart, title: "Gagner avec identité", text: "Jeu offensif et ADN de conquête du plus jeune champion de RDC.", delay: "delay-200" },
+              { icon: Globe, title: "Rayonner en Afrique", text: "Représenter Kinshasa et la RDC sur la scène continentale.", delay: "delay-300" },
             ].map(({ icon: Icon, title, text, delay }) => (
               <Card key={title} className={`group p-6 text-center hover:shadow-xl hover:-translate-y-1.5 transition-all duration-300 reveal ${delay}`}>
                 <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-primary-100 transition-transform duration-300 group-hover:scale-110 dark:bg-primary-900/30">
@@ -174,8 +174,8 @@ export default function About() {
           <div className="absolute inset-0 opacity-10" style={{ backgroundImage: "url(\"data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='1'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E\")" }} />
           <div className="relative z-10 mx-auto max-w-2xl">
             <Dumbbell className="mx-auto mb-5 h-12 w-12 text-primary-200" />
-            <h3 className="text-3xl font-bold mb-4">Votre prochaine étape commence ici</h3>
-            <p className="text-primary-100 mb-8 text-lg">Rejoignez notre communauté et commencez votre transformation sportive dès aujourd'hui.</p>
+            <h3 className="text-3xl font-bold mb-4">Rejoignez l'aventure des Samouraïs</h3>
+            <p className="text-primary-100 mb-8 text-lg">Centre sportif à Kinshasa — Stade des Martyrs et Stade Tata Raphaël. Écrivez-nous : contact@lesaiglesducongo.cd</p>
             <div className="flex flex-col sm:flex-row justify-center gap-4">
               <Link href="/activities">
                 <Button size="lg" className="bg-white text-primary-700 hover:bg-primary-50 font-semibold w-full sm:w-auto">

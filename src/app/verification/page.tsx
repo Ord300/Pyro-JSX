@@ -25,12 +25,12 @@ import { useActivities } from "@/src/hooks/queries/activities";
 import { subscriptionFlow, type ContactRequest } from "@/src/services/subscriptionFlowService";
 
 const ACTIVITY_IMAGES = [
-  "https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?q=80&w=800&auto=format&fit=crop",
-  "https://images.unsplash.com/photo-1517836357463-d25dfeac3438?q=80&w=800&auto=format&fit=crop",
-  "https://images.unsplash.com/photo-1517963879433-6ad2b056d712?q=80&w=800&auto=format&fit=crop",
-  "https://images.unsplash.com/photo-1571902943202-507ec2618e8f?q=80&w=800&auto=format&fit=crop",
-  "https://images.unsplash.com/photo-1546483875-ad9014c88eba?q=80&w=800&auto=format&fit=crop",
-  "https://images.unsplash.com/photo-1574680096145-d05b474e2155?q=80&w=800&auto=format&fit=crop",
+  "/hero-salle.jpg",
+  "/hero-foot.jpg",
+  "/hero-basket.jpg",
+  "/hero-yoga.jpg",
+  "/hero-basket-2.jpg",
+  "/equipe-aigles.jpg",
 ];
 
 const HIGHLIGHTS = [
@@ -62,7 +62,10 @@ export default function Verification() {
   }, [plan]);
   const verify = async (event: React.FormEvent) => {
     event.preventDefault();
-    setRequest(await subscriptionFlow.requestByEmail(email));
+    const found = await subscriptionFlow.requestByEmail(email);
+    setRequest(found);
+    if (found?.activityId) setActivityId(Number(found.activityId));
+    if (found?.planId) setPlanId(String(found.planId));
     setStep(2);
   };
   const pay = async () => {

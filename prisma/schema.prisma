@@ -20,11 +20,14 @@ model Activity {
   priceYear   Float
   image       String @default("")
   icon        String @default("")
+  minAge      Int?
+  maxAge      Int?
 }
 
 model Trainer {
   id            Int    @id @default(autoincrement())
   name          String
+  email         String @default("")
   specialty     String
   experience    String
   activitiesJson String @default("[]")
@@ -72,6 +75,7 @@ model Subscription {
   currency         String  @default("USD")
   paymentMethod    String
   paymentReference String?
+  cardToken        String?
   createdAt        String
 }
 
@@ -161,6 +165,17 @@ model TimeSlot {
   booked    Int     @default(0)
 }
 
+model Attendance {
+  id           Int     @id @default(autoincrement())
+  activityName String
+  email        String
+  userName     String
+  date         String
+  present      Boolean @default(false)
+  markedBy     String  @default("")
+  createdAt    String
+}
+
 model Receipt {
   id              Int     @id @default(autoincrement())
   reference       String
@@ -179,6 +194,29 @@ model Receipt {
   date            String
   status          String
   itemsJson       String  @default("[]")
+}
+
+model Message {
+  id               Int     @id @default(autoincrement())
+  email            String
+  userName         String?
+  sender           String
+  subject          String?
+  body             String
+  createdAt        String
+  readByAdmin      Boolean @default(false)
+  readBySubscriber Boolean @default(false)
+}
+
+model Notification {
+  id        Int     @id @default(autoincrement())
+  userEmail String
+  title     String
+  message   String
+  type      String  @default("info")
+  audience  String  @default("")
+  createdAt String
+  read      Boolean @default(false)
 }
 
 model User {

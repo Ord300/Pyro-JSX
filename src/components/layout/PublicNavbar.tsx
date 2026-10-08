@@ -3,7 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Dumbbell, Menu, X } from "lucide-react";
+import { Menu, X } from "lucide-react";
 import { Button } from "../ui/Button";
 import { cn } from "@/src/utils/cn";
 
@@ -11,7 +11,6 @@ const navLinks = [
   { name: "Accueil", path: "/" },
   { name: "À propos", path: "/about" },
   { name: "Activités", path: "/activities" },
-  { name: "Boutique", path: "/equipements" },
   { name: "Vérification", path: "/verification" },
 ];
 
@@ -23,9 +22,12 @@ export function PublicNavbar() {
     <header className="sticky top-0 z-50 w-full border-b border-slate-200 bg-white/80 backdrop-blur-md dark:border-slate-800 dark:bg-slate-900/80">
       <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
         <div className="flex items-center">
-          <Link href="/" className="flex items-center gap-2">
-            <Dumbbell className="h-8 w-8 text-primary-600 dark:text-primary-500" />
-            <span className="text-xl font-bold tracking-tight text-slate-900 dark:text-white">MoveUp</span>
+          <Link href="/" className="flex items-center gap-3">
+            <img src="/aigles-logo.png" alt="Blason du Football Club Les Aigles du Congo" className="h-10 w-auto shrink-0 object-contain" />
+            <span className="flex flex-col leading-none">
+              <span className="font-display text-lg font-bold uppercase tracking-[0.14em] text-[#1A2A99] dark:text-white">Les Aigles</span>
+              <span className="font-display text-[0.68rem] font-semibold uppercase tracking-[0.34em] text-[#C8A44A]">du Congo</span>
+            </span>
           </Link>
         </div>
 
