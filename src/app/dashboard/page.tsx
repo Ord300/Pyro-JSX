@@ -5,6 +5,7 @@ import { useEffect, useState } from "react";
 import { Card } from "@/src/components/ui/Card";
 import { Badge } from "@/src/components/ui/Badge";
 import { subscriptionsDB, reservationsDB, paymentsDB, usersDB } from "@/src/services/dbService";
+import { isSubscriptionActive, isSubscriptionExpired } from "@/src/utils/subscriptionStatus";
 import type { Reservation } from "@/src/types/reservation";
 import { CreditCard, Calendar, Wallet, Bell, ArrowRight } from "lucide-react";
 
@@ -32,12 +33,13 @@ export default function UserDashboard() {
     load();
   }, []);
 
-  const activeSubscription = subscriptions.find((s) => s.status === "Validée");
+  const activeSubscription = subscriptions.find((s) => isSubscriptionActive(s));
+  const expiredSubscription = !activeSubscription ? [...subscriptions].sort((a, b) => String(b.endDate || "").localeCompare(String(a.endDate || ""))).find((s) => isSubscriptionExpired(s)) : null;
   const upcomingReservations = reservations.filter((r) => r.status === "Confirmée");
   const recentPayments = payments.slice(0, 3);
 
   const stats = [
-    { label: "Abonnement actif", value: activeSubscription ? "Actif" : "Aucun", icon: CreditCard, color: "text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-900/20" },
+    { label: "Abonnement actif", value: activeSubscription ? "Actif" : expiredSubscription ? "Expiré" : "Aucun", icon: CreditCard, color: activeSubscription ? "text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-900/20" : expiredSubscription ? "text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/20" : "text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-900/20" },
     { label: "Réservations à venir", value: upcomingReservations.length, icon: Calendar, color: "text-teal-600 dark:text-teal-400 bg-teal-50 dark:bg-teal-900/20" },
     { label: "Paiements effectués", value: payments.filter((p) => p.status === "Réussi").length, icon: Wallet, color: "text-green-600 dark:text-green-400 bg-green-50 dark:bg-green-900/20" },
     { label: "Notifications", value: 3, icon: Bell, color: "text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/20" },
@@ -97,6 +99,29 @@ export default function UserDashboard() {
                   <p className="font-medium text-emerald-950 dark:text-emerald-50">{activeSubscription.endDate}</p>
                 </div>
               </div>
+            </div>
+          ) : expiredSubscription ? (
+            <div className="mt-4 rounded-lg border border-red-200 bg-red-50/60 p-4 dark:border-red-800 dark:bg-red-900/20">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="font-semibold text-red-950 dark:text-red-50">{expiredSubscription.planName}</p>
+                  <p className="text-sm text-red-900/60 dark:text-red-200/60">{expiredSubscription.activityName}</p>
+                </div>
+                <Badge variant="danger">Expiré</Badge>
+              </div>
+              <div className="mt-4 grid grid-cols-2 gap-4 text-sm">
+                <div>
+                  <p className="text-red-900/60 dark:text-red-200/60">Début</p>
+                  <p className="font-medium text-red-950 dark:text-red-50">{expiredSubscription.startDate}</p>
+                </div>
+                <div>
+                  <p className="text-red-900/60 dark:text-red-200/60">Fin (dépassée)</p>
+                  <p className="font-medium text-red-950 dark:text-red-50">{expiredSubscription.endDate}</p>
+                </div>
+              </div>
+              <Link href="/dashboard/subscription" className="mt-3 inline-block text-sm font-semibold text-red-600 hover:text-red-700 dark:text-red-400">
+                Renouveler maintenant →
+              </Link>
             </div>
           ) : (
             <div className="mt-4 rounded-lg border border-dashed border-emerald-300 p-6 text-center dark:border-emerald-700">

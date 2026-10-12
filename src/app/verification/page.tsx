@@ -12,7 +12,6 @@ import {
   Clock,
   Copy,
   CreditCard,
-  Dumbbell,
   Eye,
   EyeOff,
   KeyRound,
@@ -30,13 +29,7 @@ import { Input } from "@/src/components/ui/Input";
 import { mockSubscriptionPlans } from "@/src/data/subscriptionData";
 import { useActivities } from "@/src/hooks/queries/activities";
 import { subscriptionFlow, type ContactRequest } from "@/src/services/subscriptionFlowService";
-
-const ACTIVITY_IMAGES = [
-  "/hero-basket.jpg",
-  "/hero-yoga.jpg",
-  "/hero-basket-2.jpg",
-  "/equipe-aigles.jpg",
-];
+import { useGallerySlides } from "@/src/hooks/useGallerySlides";
 
 const HIGHLIGHTS = [
   { icon: Search, label: "Suivi en temps réel" },
@@ -62,13 +55,13 @@ export default function Verification() {
   const [showTempPwd, setShowTempPwd] = useState(false);
   const [slide, setSlide] = useState(0);
   const [step, setStep] = useState(1);
+  const gallerySlides = useGallerySlides();
   const activity = activities.find((item) => item.id === activityId);
-  const plan = mockSubscriptionPlans.find((item) => item.id === planId)!;
-  const amount = activity ? activity[plan.period === "Semaine" ? "priceWeek" : plan.period === "Mois" ? "priceMonth" : "priceYear"] : 0;
+  const plan = mockSubscriptionPlans.find((item) => item.id === planId) ?? mockSubscriptionPlans[0];
+  const amount = activity ? activity[plan.period === "Mois" ? "priceMonth" : "priceYear"] : 0;
   const endDate = useMemo(() => {
     const date = new Date();
-    if (plan.period === "Semaine") date.setDate(date.getDate() + 7);
-    else if (plan.period === "Mois") date.setMonth(date.getMonth() + 1);
+    if (plan.period === "Mois") date.setMonth(date.getMonth() + 1);
     else date.setFullYear(date.getFullYear() + 1);
     return date.toISOString().slice(0, 10);
   }, [plan]);
@@ -77,7 +70,7 @@ export default function Verification() {
     const found = await subscriptionFlow.requestByEmail(email);
     setRequest(found);
     if (found?.activityId) setActivityId(Number(found.activityId));
-    if (found?.planId) setPlanId(String(found.planId));
+    if (found?.planId) setPlanId(found.planId === "week" ? "month" : String(found.planId));
     setStep(2);
   };
   const isPhoneValid = /^(\+243|0)\d{9}$/.test(phone.replace(/\s/g, ""));
@@ -104,7 +97,8 @@ export default function Verification() {
     }
   };
   const goTo = (index: number) => {
-    setSlide(((index % ACTIVITY_IMAGES.length) + ACTIVITY_IMAGES.length) % ACTIVITY_IMAGES.length);
+    if (gallerySlides.length === 0) return;
+    setSlide(((index % gallerySlides.length) + gallerySlides.length) % gallerySlides.length);
   };
 
   const copyText = async (kind: "email" | "password" | "member", value: string) => {
@@ -122,11 +116,12 @@ export default function Verification() {
     setTimeout(() => setCopied(null), 2000);
   };
   useEffect(() => {
+    if (gallerySlides.length === 0) return;
     const timerRef = setInterval(() => {
-      setSlide((prev) => (prev + 1) % ACTIVITY_IMAGES.length);
+      setSlide((prev) => (prev + 1) % gallerySlides.length);
     }, 4000);
     return () => clearInterval(timerRef);
-  }, []);
+  }, [gallerySlides.length]);
 
   // ── ÉCRAN REÇU / SUCCÈS PLEIN ÉCRAN ──
   if (receipt) {
@@ -263,12 +258,12 @@ export default function Verification() {
     <div className="flex min-h-screen bg-slate-50 dark:bg-slate-950">
       {/* ── COLONNE GAUCHE : CARROUSEL D'ACTIVITÉS ── */}
       <div className="relative hidden overflow-hidden lg:flex lg:w-1/2 bg-gradient-to-br from-primary-900 via-primary-700 to-primary-500">
-        {ACTIVITY_IMAGES.map((img, i) => (
+        {gallerySlides.map((slideItem, i) => (
           <div
-            key={i}
-            className={`absolute inset-0 transition-opacity duration-1000 ${i === slide ? "opacity-100" : "opacity-0"}`}
+            key={`${slideItem.src}-${i}`}
+            className={`absolute inset-0 transition-opacity duration-1000 ${i === slide % gallerySlides.length ? "opacity-100" : "opacity-0"}`}
           >
-            <img src={img} alt={`Activité ${i + 1}`} className="h-full w-full object-cover" />
+            <img src={slideItem.src} alt={slideItem.alt} className="h-full w-full object-cover" />
             <div className="absolute inset-0 bg-gradient-to-t from-primary-950/90 via-primary-900/40 to-primary-900/20" />
           </div>
         ))}
@@ -276,9 +271,12 @@ export default function Verification() {
         <div className="relative z-10 flex w-full flex-col p-10">
           {/* Barre supérieure */}
           <div className="flex items-center justify-between">
-            <Link href="/" className="inline-flex items-center gap-2 text-white">
-              <Dumbbell className="h-9 w-9" />
-              <span className="text-2xl font-extrabold tracking-tight">MoveUp</span>
+            <Link href="/" className="inline-flex items-center gap-3 text-white">
+              <img src="/aigles-logo.png" alt="Blason du Football Club Les Aigles du Congo" className="h-11 w-auto shrink-0 object-contain" />
+              <span className="flex flex-col leading-none">
+                <span className="text-lg font-bold uppercase tracking-[0.14em]">Les Aigles</span>
+                <span className="text-[0.68rem] font-semibold uppercase tracking-[0.34em] text-[#C8A44A]">du Congo</span>
+              </span>
             </Link>
             <Link href="/" className="inline-flex items-center gap-1.5 text-sm text-white/80 transition-colors hover:text-white">
               <ArrowLeft className="h-4 w-4" />
@@ -297,7 +295,7 @@ export default function Verification() {
               <span className="text-primary-200">sportive.</span>
             </h2>
             <p className="mt-4 max-w-md text-lg text-primary-100">
-              Entrez votre adresse e-mail pour retrouver votre demande d'abonnement et finaliser votre inscription.
+              Entrez votre adresse e-mail pour retrouver votre Inscription et finaliser votre inscription.
             </p>
             <div className="mt-8 flex flex-wrap items-center justify-center gap-x-6 gap-y-3">
               {HIGHLIGHTS.map(({ icon: Icon, label }) => (
@@ -312,11 +310,11 @@ export default function Verification() {
           {/* Contrôles du carrousel */}
           <div className="flex items-center justify-between">
             <div className="flex gap-2">
-              {ACTIVITY_IMAGES.map((_, i) => (
+              {gallerySlides.map((slideItem, i) => (
                 <button
-                  key={i}
+                  key={`${slideItem.src}-dot-${i}`}
                   onClick={() => goTo(i)}
-                  className={`h-2 rounded-full transition-all duration-300 ${i === slide ? "w-8 bg-white" : "w-2 bg-white/40 hover:bg-white/60"}`}
+                  className={`h-2 rounded-full transition-all duration-300 ${i === slide % gallerySlides.length ? "w-8 bg-white" : "w-2 bg-white/40 hover:bg-white/60"}`}
                   aria-label={`Aller à l'image ${i + 1}`}
                 />
               ))}
@@ -347,8 +345,11 @@ export default function Verification() {
           {/* En-tête mobile */}
           <div className="mb-8 text-center lg:hidden">
             <Link href="/" className="mb-4 inline-flex items-center gap-2">
-              <Dumbbell className="h-8 w-8 text-primary-600 dark:text-primary-400" />
-              <span className="text-xl font-bold tracking-tight text-slate-900 dark:text-white">MoveUp</span>
+              <img src="/aigles-logo.png" alt="Blason du Football Club Les Aigles du Congo" className="h-10 w-auto shrink-0 object-contain" />
+              <span className="flex flex-col leading-none text-left">
+                <span className="text-lg font-bold uppercase tracking-[0.14em] text-[#1A2A99] dark:text-white">Les Aigles</span>
+                <span className="text-[0.68rem] font-semibold uppercase tracking-[0.34em] text-[#C8A44A]">du Congo</span>
+              </span>
             </Link>
             <h1 className="text-3xl font-extrabold text-slate-900 dark:text-white">Vérifier ma demande</h1>
             <p className="mt-2 text-slate-500 dark:text-slate-400">Utilisez l'adresse e-mail du formulaire Contact.</p>
@@ -357,7 +358,7 @@ export default function Verification() {
           {/* Titre desktop au-dessus du formulaire */}
           <div className="mb-8 hidden text-center lg:block">
             <h1 className="text-3xl font-extrabold text-slate-900 dark:text-white">Suivi de votre demande</h1>
-            <p className="mt-2 text-slate-500 dark:text-slate-400">Vérifiez le statut de votre demande et finalisez votre abonnement.</p>
+            <p className="mt-2 text-slate-500 dark:text-slate-400">Vérifiez le statut de votre demande d'insciption et finalisez votre abonnement.</p>
           </div>
 
           {/* Indicateur d'étapes */}
@@ -377,7 +378,7 @@ export default function Verification() {
                   </div>
                   <h2 className="text-xl font-bold text-slate-900 dark:text-white">Retrouver ma demande</h2>
                   <p className="mt-1.5 text-sm text-slate-500 dark:text-slate-400">
-                    Saisissez l'e-mail utilisé lors de votre demande d'abonnement.
+                    Saisissez l'e-mail utilisé lors de votre Inscription.
                   </p>
                 </div>
                 <form onSubmit={verify} className="space-y-5">
@@ -436,7 +437,7 @@ export default function Verification() {
                 <Badge variant="danger">Refusée</Badge>
                 <h2 className="mt-3 text-xl font-bold text-slate-900 dark:text-white">Demande refusée</h2>
                 <p className="mt-2 text-sm text-slate-500 dark:text-slate-400">
-                  Votre demande d'abonnement a été refusée. Veuillez contacter l'administration pour plus d'informations.
+                  Votre Inscription a été refusée. Veuillez contacter l'administration pour plus d'informations.
                 </p>
                 <Button variant="outline" className="mt-6 w-full" onClick={() => { setStep(1); setEmail(""); }}>
                   Réessayer avec une autre adresse

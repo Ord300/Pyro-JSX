@@ -248,3 +248,36 @@ model Stat {
   id   Int    @id @default(1)
   data String @default("{}")
 }
+
+model Performance {
+  id           Int     @id @default(autoincrement())
+  userId       Int?
+  userName     String
+  email        String
+  activityName String
+  metric       String
+  value        Float
+  unit         String  @default("")
+  date         String
+  notes        String?
+  markedBy     String  @default("")
+  createdAt    String
+}
+
+model Goal {
+  id           Int     @id @default(autoincrement())
+  userId       Int?
+  userName     String
+  email        String
+  activityName String
+  title        String
+  description  String?
+  targetValue  Float?
+  currentValue Float   @default(0)
+  unit         String  @default("")
+  deadline     String?
+  status       String  @default("En cours")
+  markedBy     String  @default("")
+  createdAt    String
+  updatedAt    String?
+}

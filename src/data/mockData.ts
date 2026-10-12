@@ -293,35 +293,35 @@ export const mockPlaces: Place[] = [
 export const mockTestimonials: Testimonial[] = [
   {
     id: 1,
-    name: "Jean Dupont",
-    activity: "Fitness",
+    name: "Jean Pierre",
+    activity: "Vollayball",
     comment: "Excellent centre sportif ! Les coachs sont très professionnels et les installations sont modernes.",
     rating: 5,
-    avatar: "JD",
+    avatar: "JP",
   },
   {
     id: 2,
-    name: "Marie Dubois",
-    activity: "Yoga",
-    comment: "Les séances de yoga avec Amina sont incroyables. Je me sens mieux dans mon corps et dans ma tête.",
+    name: "Ordi",
+    activity: "Musculation",
+    comment: "Les séances de  avec Amina sont incroyables. Je me sens mieux dans mon corps et dans ma tête.",
     rating: 5,
-    avatar: "MD",
+    avatar: "O",
   },
   {
     id: 3,
-    name: "Karim Bensalah",
-    activity: "Boxe",
-    comment: "La salle de boxe est top ! Les entraînements sont intenses et le coach est très pédagogue.",
+    name: "Pat Mbakata",
+    activity: "Handball",
+    comment: "La salle de handball est top ! Les entraînements sont intenses et le coach est très pédagogue.",
     rating: 4,
-    avatar: "KB",
+    avatar: "PM",
   },
   {
     id: 4,
-    name: "Sophie Laurent",
+    name: "Anicé",
     activity: "Football",
     comment: "Le terrain de football est magnifique. Les matchs du week-end sont très conviviaux.",
     rating: 5,
-    avatar: "SL",
+    avatar: "A",
   },
 ];
 
@@ -401,15 +401,6 @@ export const mockGalleryImages: GalleryImage[] = [
 ];
 
 export const mockPricingPlans: PricingPlan[] = [
-  {
-    id: "week",
-    name: "Formule Semaine",
-    period: "Semaine",
-    price: 15,
-    currency: "USD",
-    popular: false,
-    features: ["Accès 7 jours", "1 activité au choix", "Vestiaires inclus", "Support de base"],
-  },
   {
     id: "month",
     name: "Formule Mensuelle",

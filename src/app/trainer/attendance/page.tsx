@@ -149,7 +149,7 @@ export default function TrainerAttendance() {
         <div className="flex flex-col gap-3 sm:flex-row sm:items-end">
           <div className="flex-1">
             <label className="mb-1 block text-sm font-medium">Activité</label>
-            <select value={activity} onChange={(e) => setActivity(e.target.value)} className="w-full rounded-md border border-slate-300 bg-transparent px-3 py-2 text-sm dark:border-slate-700">
+            <select value={activity} onChange={(e) => setActivity(e.target.value)} className="w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-900 shadow-sm focus:border-sky-500 focus:outline-none focus:ring-2 focus:ring-sky-500 dark:border-slate-600 dark:bg-slate-800 dark:text-white [&>option]:bg-white [&>option]:text-slate-900 dark:[&>option]:bg-slate-800 dark:[&>option]:text-white">
               {ctx.myActivityNames.map((n) => <option key={n}>{n}</option>)}
             </select>
           </div>

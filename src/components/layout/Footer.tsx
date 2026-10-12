@@ -46,9 +46,9 @@ const contactItems = [
 ];
 
 const openingHours = [
-  { days: "Lundi – Vendredi", hours: "06:00 – 22:00" },
-  { days: "Samedi", hours: "08:00 – 20:00" },
-  { days: "Dimanche", hours: "09:00 – 18:00" },
+  { days: "Lundi – Vendredi", hours: "13:00 – 15:00" },
+  { days: "Samedi", hours: "11:00 – 14:00" },
+  { days: "Dimanche", hours: "Répos" },
 ];
 
 const socialLinks = [

@@ -6,7 +6,6 @@ import {
   PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid,
   Tooltip, ResponsiveContainer
 } from "recharts";
-import { revenueData as fallbackRevenue, activityDistribution as fallbackActivityDistribution, reservationData as fallbackReservationData } from "@/src/data/adminData";
 
 type RevenueChartProps = { payments?: any[] };
 type SubscriptionsChartProps = { subscriptions?: any[] };
@@ -22,18 +21,33 @@ const tooltipStyle = {
   },
 };
 
-// Graphique Revenus (Area)
+// Graphique Revenus (Area) — paiements réussis uniquement, jamais de données mockées.
 export function RevenueChart({ payments }: RevenueChartProps) {
   const data = React.useMemo(() => {
-    if (!payments || payments.length === 0) return fallbackRevenue;
-    const map: Record<string, number> = {};
-    payments.forEach((p) => {
-      const d = p.date ? new Date(p.date) : new Date();
-      const key = d.toLocaleString("fr-FR", { month: "short" });
-      map[key] = (map[key] || 0) + (p.total ?? p.amount ?? 0);
+    const ok = (payments ?? []).filter((p) => p.status === "Réussi");
+    if (ok.length === 0) return [];
+    const map: Record<string, { month: string; revenue: number; ts: number }> = {};
+    ok.forEach((p) => {
+      const d = new Date(p.paidAt || p.createdAt || p.date || 0);
+      if (Number.isNaN(d.getTime())) return;
+      const key = `${d.getFullYear()}-${d.getMonth()}`;
+      const label = d.toLocaleString("fr-FR", { month: "short" });
+      if (!map[key]) map[key] = { month: label, revenue: 0, ts: d.getTime() };
+      map[key].revenue += Number(p.total ?? p.amount) || 0;
     });
-    return Object.keys(map).map((k) => ({ month: k, revenue: map[k], subscriptions: 0 }));
+    return Object.values(map)
+      .sort((a, b) => a.ts - b.ts)
+      .map(({ month, revenue }) => ({ month, revenue, subscriptions: 0 }));
   }, [payments]);
+  if (data.length === 0) {
+    return (
+      <div className="rounded-xl border border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-900 p-6 shadow-sm">
+        <h3 className="text-base font-semibold text-slate-900 dark:text-white">Évolution des revenus</h3>
+        <p className="text-sm text-slate-400 mt-0.5">Revenus mensuels en USD (paiements réussis)</p>
+        <p className="py-10 text-center text-sm text-slate-400">Aucun paiement réussi enregistré pour le moment.</p>
+      </div>
+    );
+  }
   return (
     <div className="rounded-xl border border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-900 p-6 shadow-sm">
       <div className="mb-6">
@@ -59,18 +73,32 @@ export function RevenueChart({ payments }: RevenueChartProps) {
   );
 }
 
-// Graphique Abonnements (Bar)
+// Graphique Abonnements (Bar) — vrais abonnements créés par mois calendaire.
 export function SubscriptionsChart({ subscriptions }: SubscriptionsChartProps) {
   const data = React.useMemo(() => {
-    if (!subscriptions || subscriptions.length === 0) return fallbackRevenue;
-    const map: Record<string, number> = {};
+    if (!subscriptions || subscriptions.length === 0) return [];
+    const map: Record<string, { month: string; subscriptions: number; ts: number }> = {};
     subscriptions.forEach((s) => {
-      const d = s.createdAt ? new Date(s.createdAt) : new Date();
-      const key = d.toLocaleString("fr-FR", { month: "short" });
-      map[key] = (map[key] || 0) + 1;
+      const d = new Date(s.createdAt || s.startDate || 0);
+      if (Number.isNaN(d.getTime())) return;
+      const key = `${d.getFullYear()}-${d.getMonth()}`;
+      const label = d.toLocaleString("fr-FR", { month: "short" });
+      if (!map[key]) map[key] = { month: label, subscriptions: 0, ts: d.getTime() };
+      map[key].subscriptions += 1;
     });
-    return Object.keys(map).map((k) => ({ month: k, subscriptions: map[k] }));
+    return Object.values(map)
+      .sort((a, b) => a.ts - b.ts)
+      .map(({ month, subscriptions }) => ({ month, subscriptions }));
   }, [subscriptions]);
+  if (data.length === 0) {
+    return (
+      <div className="rounded-xl border border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-900 p-6 shadow-sm">
+        <h3 className="text-base font-semibold text-slate-900 dark:text-white">Nouveaux abonnements</h3>
+        <p className="text-sm text-slate-400 mt-0.5">Par mois</p>
+        <p className="py-10 text-center text-sm text-slate-400">Aucun abonnement enregistré pour le moment.</p>
+      </div>
+    );
+  }
   return (
     <div className="rounded-xl border border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-900 p-6 shadow-sm">
       <div className="mb-6">
@@ -93,15 +121,25 @@ export function SubscriptionsChart({ subscriptions }: SubscriptionsChartProps) {
 // Graphique Réservations (Line)
 export function ReservationsChart({ reservations }: ReservationsChartProps) {
   const data = React.useMemo(() => {
-    if (!reservations || reservations.length === 0) return fallbackReservationData;
+    if (!reservations || reservations.length === 0) return [];
     const map: Record<string, number> = {};
     reservations.forEach((r) => {
-      const d = r.date ? new Date(r.date) : new Date();
+      const d = new Date(r.date || r.createdAt || 0);
+      if (Number.isNaN(d.getTime())) return;
       const key = d.toLocaleString("fr-FR", { weekday: "short" });
       map[key] = (map[key] || 0) + 1;
     });
     return Object.keys(map).map((k) => ({ day: k, reservations: map[k] }));
   }, [reservations]);
+  if (data.length === 0) {
+    return (
+      <div className="rounded-xl border border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-900 p-6 shadow-sm">
+        <h3 className="text-base font-semibold text-slate-900 dark:text-white">Réservations cette semaine</h3>
+        <p className="text-sm text-slate-400 mt-0.5">Par jour</p>
+        <p className="py-10 text-center text-sm text-slate-400">Aucune réservation enregistrée pour le moment.</p>
+      </div>
+    );
+  }
   return (
     <div className="rounded-xl border border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-900 p-6 shadow-sm">
       <div className="mb-6">
@@ -124,7 +162,7 @@ export function ReservationsChart({ reservations }: ReservationsChartProps) {
 // Graphique Activités (Donut Pie)
 export function ActivityDonutChart({ subscriptions }: ActivityDonutChartProps) {
   const dist = React.useMemo(() => {
-    if (!subscriptions || subscriptions.length === 0) return fallbackActivityDistribution;
+    if (!subscriptions || subscriptions.length === 0) return [];
     const map: Record<string, number> = {};
     subscriptions.forEach((s: any) => {
       const name = s.activityName || s.activity || "Autre";
@@ -133,6 +171,15 @@ export function ActivityDonutChart({ subscriptions }: ActivityDonutChartProps) {
     const colors = ["#3b82f6", "#10b981", "#f59e0b", "#ef4444", "#8b5cf6", "#06b6d4"];
     return Object.keys(map).map((k, i) => ({ name: k, value: Math.round((map[k] / subscriptions.length) * 100), color: colors[i % colors.length] }));
   }, [subscriptions]);
+  if (dist.length === 0) {
+    return (
+      <div className="rounded-xl border border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-900 p-6 shadow-sm">
+        <h3 className="text-base font-semibold text-slate-900 dark:text-white">Activités populaires</h3>
+        <p className="text-sm text-slate-400 mt-0.5">Répartition des abonnés</p>
+        <p className="py-10 text-center text-sm text-slate-400">Aucun abonnement enregistré pour le moment.</p>
+      </div>
+    );
+  }
   return (
     <div className="rounded-xl border border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-900 p-6 shadow-sm">
       <div className="mb-4">

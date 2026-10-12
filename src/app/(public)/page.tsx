@@ -11,6 +11,7 @@ import { usersDB, placesDB } from "@/src/services/dbService";
 import { useActivities } from "@/src/hooks/queries/activities";
 import { useTrainers } from "@/src/hooks/queries/trainers";
 import { useGallery } from "@/src/hooks/queries/gallery";
+import { useGallerySlides } from "@/src/hooks/useGallerySlides";
 import { useScrollReveal } from "@/src/hooks/useScrollReveal";
 import { useCounter } from "@/src/hooks/useCounter";
 
@@ -37,19 +38,13 @@ function Stars({ rating }: { rating: number }) {
   );
 }
 
-const HERO_IMAGES = [
-  "/hero-basket.jpg",
-  "/hero-yoga.jpg",
-  "/hero-basket-2.jpg",
-  "/equipe-aigles.jpg",
-];
-
 export default function Home() {
   const [activeTab, setActiveTab] = useState<"monthly" | "yearly">("monthly");
   const [heroSlide, setHeroSlide] = useState(0);
   const { data: activities = [] } = useActivities();
   const { data: trainers = [] } = useTrainers();
   const { data: galleryImages = [] } = useGallery();
+  const heroSlides = useGallerySlides();
   const [membersCount, setMembersCount] = useState(0);
   const [placesCount, setPlacesCount] = useState(0);
 
@@ -68,26 +63,27 @@ export default function Home() {
   }, []);
 
   useEffect(() => {
+    if (heroSlides.length === 0) return;
     const timer = setInterval(() => {
-      setHeroSlide((prev) => (prev + 1) % HERO_IMAGES.length);
+      setHeroSlide((prev) => (prev + 1) % heroSlides.length);
     }, 5000);
     return () => clearInterval(timer);
-  }, []);
+  }, [heroSlides.length]);
 
   return (
     <div className="min-h-screen">
       {/* ── HERO ── */}
       <section className="relative flex min-h-[50vh] items-center justify-center overflow-hidden bg-primary-950 px-6 py-12">
-        {/* Images des installations qui défilent en arrière-plan */}
-        {HERO_IMAGES.map((img, i) => (
+        {/* Images de la galerie admin qui défilent en arrière-plan */}
+        {heroSlides.map((slide, i) => (
           <div
-            key={i}
-            className={`absolute inset-0 transition-opacity duration-[2000ms] ease-in-out ${i === heroSlide ? "opacity-100" : "opacity-0"}`}
+            key={`${slide.src}-${i}`}
+            className={`absolute inset-0 transition-opacity duration-[2000ms] ease-in-out ${i === heroSlide % heroSlides.length ? "opacity-100" : "opacity-0"}`}
           >
             <img
-              src={img}
-              alt={`Photo centre sportif ${i + 1}`}
-              className={`h-full w-full object-cover ${i === heroSlide ? "animate-[hero-zoom_8s_ease-out_forwards]" : ""}`}
+              src={slide.src}
+              alt={slide.alt}
+              className={`h-full w-full object-cover ${i === heroSlide % heroSlides.length ? "animate-[hero-zoom_8s_ease-out_forwards]" : ""}`}
             />
           </div>
         ))}

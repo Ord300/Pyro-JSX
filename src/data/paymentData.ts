@@ -35,7 +35,7 @@ export const mockPayments: Payment[] = [
   {
     id: 1,
     userId: 1,
-    userName: 'Jean Dupont',
+    userName: 'nom post-nom',
     subscriptionId: 1,
     amount: 45,
     currency: 'USD',

@@ -6,6 +6,7 @@ import { Badge } from "@/src/components/ui/Badge";
 import { Button } from "@/src/components/ui/Button";
 import { cn } from "@/src/utils/cn";
 import { paymentsDB, subscriptionsDB, reservationsDB, usersDB } from "@/src/services/dbService";
+import { isSubscriptionActive, isSubscriptionExpired } from "@/src/utils/subscriptionStatus";
 import { TrendingUp, Users, DollarSign, Calendar, Download, BarChart3, PieChart } from "lucide-react";
 
 type ReportPeriod = "week" | "month" | "year";
@@ -41,7 +42,8 @@ export default function AdminReports() {
     .filter((p) => p.status === "Réussi")
     .reduce((sum, p) => sum + (p.total ?? p.amount ?? 0), 0);
 
-  const activeSubscriptions = subscriptions.filter((s) => s.status === "active" || s.status === "Validée").length;
+  const activeSubscriptions = subscriptions.filter((s) => isSubscriptionActive(s)).length;
+  const expiredSubscriptions = subscriptions.filter((s) => isSubscriptionExpired(s)).length;
   const pendingSubscriptions = subscriptions.filter((s) => s.status === "En attente" || s.status === "pending").length;
   const confirmedReservations = reservations.filter((r) => r.status === "Confirmée" || r.status === "confirmed").length;
 
@@ -327,6 +329,12 @@ export default function AdminReports() {
                 <td className="py-3 pr-4 font-semibold text-slate-900 dark:text-white">{pendingSubscriptions}</td>
                 <td className="py-3 pr-4 text-amber-600 dark:text-amber-400">→ Stable</td>
                 <td className="py-3"><Badge variant="warning">À surveiller</Badge></td>
+              </tr>
+              <tr>
+                <td className="py-3 pr-4 text-slate-900 dark:text-white">Abonnements expirés (dynamique)</td>
+                <td className="py-3 pr-4 font-semibold text-slate-900 dark:text-white">{expiredSubscriptions}</td>
+                <td className="py-3 pr-4 text-slate-500 dark:text-slate-400">Calculé depuis endDate</td>
+                <td className="py-3"><Badge variant={expiredSubscriptions > 0 ? "danger" : "success"}>{expiredSubscriptions > 0 ? "Action requise" : "OK"}</Badge></td>
               </tr>
               <tr>
                 <td className="py-3 pr-4 text-slate-900 dark:text-white">Réservations confirmées</td>

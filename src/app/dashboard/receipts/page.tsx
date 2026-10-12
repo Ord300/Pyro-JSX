@@ -168,7 +168,7 @@ export default function UserReceipts() {
               <div className="rounded-lg border border-slate-200 p-4 dark:border-slate-700">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm font-semibold text-slate-900 dark:text-white">MoveUp</p>
+                    <p className="text-sm font-semibold text-slate-900 dark:text-white">Aigles du congo</p>
                     <p className="text-xs text-slate-500 dark:text-slate-400">Kinshasa, RDC</p>
                   </div>
                   <Badge variant={getStatusVariant(selectedReceipt.status)}>{selectedReceipt.status}</Badge>

@@ -49,6 +49,8 @@ const RESOURCES: Record<string, ResourceConfig> = {
   gallery: { model: () => prisma.galleryImage, jsonFields: {} },
   messages: { model: () => prisma.message, jsonFields: {} },
   notifications: { model: () => prisma.notification, jsonFields: {} },
+  performances: { model: () => (prisma as any).performance, jsonFields: {} },
+  goals: { model: () => (prisma as any).goal, jsonFields: {} },
 };
 
 export function getResource(name: string): ResourceConfig | undefined {
@@ -298,6 +300,8 @@ export async function resetDatabase(): Promise<void> {
     prisma.paymentProvider.deleteMany(),
     prisma.message.deleteMany(),
     prisma.notification.deleteMany(),
+    (prisma as any).performance.deleteMany(),
+    (prisma as any).goal.deleteMany(),
     prisma.user.deleteMany(),
     prisma.stat.deleteMany(),
   ]);

@@ -3,24 +3,19 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
-  Dumbbell,
   LayoutDashboard,
-  Activity,
   CreditCard,
   Bell,
   History,
   MessageSquare,
   User,
-  FileText,
-  ShoppingBag
+  FileText
 } from "lucide-react";
 import { cn } from "@/src/utils/cn";
 
 const menuItems = [
   { name: "Dashboard", path: "/dashboard", icon: LayoutDashboard },
   { name: "Mon abonnement", path: "/dashboard/subscription", icon: CreditCard },
-  { name: "Activités", path: "/dashboard/activities", icon: Activity },
-  { name: "Équipements", path: "/dashboard/equipment", icon: ShoppingBag },
   { name: "Reçus", path: "/dashboard/receipts", icon: FileText },
   { name: "Historique", path: "/dashboard/history", icon: History },
   { name: "Notifications", path: "/dashboard/notifications", icon: Bell },
@@ -44,15 +39,13 @@ export function UserSidebar({ isOpen, setIsOpen }: { isOpen: boolean; setIsOpen:
         "fixed inset-y-0 left-0 z-50 w-64 transform border-r border-emerald-800/40 bg-gradient-to-b from-emerald-950 via-emerald-900 to-teal-950 transition-transform duration-300 ease-in-out lg:static lg:translate-x-0 flex flex-col",
         isOpen ? "translate-x-0" : "-translate-x-full"
       )}>
-        <div className="flex h-16 shrink-0 items-center px-6 border-b border-emerald-800/40">
-          <Link href="/dashboard" className="flex items-center gap-2">
-            <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-emerald-500/20">
-              <Dumbbell className="h-5 w-5 text-emerald-400" />
-            </div>
-            <div>
-              <span className="text-sm font-bold tracking-tight text-white block">ESPACE ABONNÉ</span>
-              <span className="text-[10px] font-medium text-emerald-400/80 tracking-wide uppercase">Mon espace personnel</span>
-            </div>
+        <div className="flex h-20 shrink-0 items-center justify-center px-6 border-b border-emerald-800/40">
+          <Link href="/dashboard" className="flex items-center justify-center">
+            <img
+              src="/aigles-logo.png"
+              alt="Blason du Football Club Les Aigles du Congo"
+              className="h-14 w-auto shrink-0 object-contain"
+            />
           </Link>
         </div>
 

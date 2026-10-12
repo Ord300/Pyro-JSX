@@ -1,4 +1,5 @@
 import { usersDB, trainersDB, subscriptionsDB, activitiesDB, attendancesDB } from "@/src/services/dbService";
+import { getDynamicStatus } from "@/src/utils/subscriptionStatus";
 
 // ============================================================
 // ESPACE ENTRAÎNEUR — Contexte partagé
@@ -43,7 +44,11 @@ export async function loadTrainerContext(): Promise<TrainerContext | null> {
   const knownNames = new Set(myActivities.map((a: any) => a.name));
   const extraNames = myActivityNames.filter((n) => !knownNames.has(n));
 
-  const mySubscriptions = subscriptions.filter((s: any) => myActivityNames.includes(s.activityName));
+  const mySubscriptions = subscriptions
+    .filter((s: any) => myActivityNames.includes(s.activityName))
+    // Statut dynamique : une "Validée" avec endDate dépassée devient "Expirée" côté coach
+    // sans écraser le statut brut en base.
+    .map((s: any) => ({ ...s, dynamicStatus: getDynamicStatus(s) }));
   const myAttendances = attendances.filter((a: any) => myActivityNames.includes(a.activityName));
 
   return { user, trainer, myActivityNames, myActivities, mySubscriptions, myAttendances, users, extraNames } as TrainerContext & { extraNames: string[] };

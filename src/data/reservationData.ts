@@ -19,7 +19,7 @@ export const mockReservations: Reservation[] = [
   {
     id: 2,
     userId: 1,
-    userName: 'Jean Dupont',
+    userName: 'nom post-nom',
     activityId: 2,
     activityName: 'Fitness',
     activityIcon: '🏃',

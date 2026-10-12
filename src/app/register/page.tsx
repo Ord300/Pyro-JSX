@@ -3,47 +3,44 @@
 import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Dumbbell, ArrowLeft, ChevronLeft, ChevronRight, CheckCircle2 } from "lucide-react";
+import { ArrowLeft, ChevronLeft, ChevronRight, CheckCircle2 } from "lucide-react";
 import { Button } from "@/src/components/ui/Button";
 import { Input } from "@/src/components/ui/Input";
 import { Card, CardContent } from "@/src/components/ui/Card";
 import { subscriptionFlow } from "@/src/services/subscriptionFlowService";
 import { useToast } from "@/src/contexts/ToastContext";
 import { useActivities } from "@/src/hooks/queries/activities";
-
-const ACTIVITY_IMAGES = [
-  "/hero-basket.jpg",
-  "/hero-yoga.jpg",
-  "/hero-basket-2.jpg",
-  "/equipe-aigles.jpg",
-];
+import { useGallerySlides } from "@/src/hooks/useGallerySlides";
 
 export default function Register() {
   const router = useRouter();
   const toast = useToast();
   const { data: activities = [] } = useActivities();
+  const gallerySlides = useGallerySlides();
   const [loading, setLoading] = useState(false);
   const [form, setForm] = useState({ name: "", email: "", phone: "", plan: "" });
   const [errors, setErrors] = useState<Partial<typeof form>>({});
   const [slide, setSlide] = useState(0);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
-  // Carrousel automatique
+  // Carrousel automatique — images de la galerie admin
   useEffect(() => {
+    if (gallerySlides.length === 0) return;
     timerRef.current = setInterval(() => {
-      setSlide((prev) => (prev + 1) % ACTIVITY_IMAGES.length);
+      setSlide((prev) => (prev + 1) % gallerySlides.length);
     }, 4000);
     return () => {
       if (timerRef.current) clearInterval(timerRef.current);
     };
-  }, []);
+  }, [gallerySlides.length]);
 
   const goTo = (index: number) => {
-    setSlide(((index % ACTIVITY_IMAGES.length) + ACTIVITY_IMAGES.length) % ACTIVITY_IMAGES.length);
+    if (gallerySlides.length === 0) return;
+    setSlide(((index % gallerySlides.length) + gallerySlides.length) % gallerySlides.length);
     if (timerRef.current) {
       clearInterval(timerRef.current);
       timerRef.current = setInterval(() => {
-        setSlide((prev) => (prev + 1) % ACTIVITY_IMAGES.length);
+        setSlide((prev) => (prev + 1) % gallerySlides.length);
       }, 4000);
     }
   };
@@ -65,9 +62,9 @@ export default function Register() {
     }
     setLoading(true);
     setTimeout(async () => {
-      await subscriptionFlow.createRequest({ name: form.name, email: form.email, phone: form.phone, subject: "Demande d'abonnement", description: `Plan: ${form.plan || "Basique"}` });
+      await subscriptionFlow.createRequest({ name: form.name, email: form.email, phone: form.phone, subject: "Inscription", description: `Plan: ${form.plan || "Basique"}` });
       setLoading(false);
-      toast.addToast("Votre demande d'abonnement a été envoyée. Nous vous contacterons bientôt.", "success");
+      toast.addToast("Votre Inscription a été envoyée. Nous vous contacterons bientôt.", "success");
       router.push("/verification");
     }, 700);
   };
@@ -77,12 +74,12 @@ export default function Register() {
       {/* ── COLONNE GAUCHE : CARROUSEL D'ACTIVITÉS ── */}
       <div className="hidden lg:flex lg:w-1/2 relative overflow-hidden bg-gradient-to-br from-primary-900 via-primary-700 to-primary-500">
         {/* Images en carrousel */}
-        {ACTIVITY_IMAGES.map((img, i) => (
+        {gallerySlides.map((slideItem, i) => (
           <div
-            key={i}
-            className={`absolute inset-0 transition-opacity duration-1000 ${i === slide ? "opacity-100" : "opacity-0"}`}
+            key={`${slideItem.src}-${i}`}
+            className={`absolute inset-0 transition-opacity duration-1000 ${i === slide % gallerySlides.length ? "opacity-100" : "opacity-0"}`}
           >
-            <img src={img} alt={`Activité ${i + 1}`} className="h-full w-full object-cover" />
+            <img src={slideItem.src} alt={slideItem.alt} className="h-full w-full object-cover" />
             <div className="absolute inset-0 bg-gradient-to-t from-primary-950/90 via-primary-900/40 to-primary-900/20" />
           </div>
         ))}
@@ -91,9 +88,12 @@ export default function Register() {
         <div className="relative z-10 flex flex-col justify-between p-10 w-full">
           {/* Logo + lien accueil */}
           <div className="flex items-center justify-between">
-            <Link href="/" className="inline-flex items-center gap-2 text-white">
-              <Dumbbell className="h-9 w-9" />
-              <span className="text-2xl font-extrabold tracking-tight">MoveUp</span>
+            <Link href="/" className="inline-flex items-center gap-3 text-white">
+              <img src="/aigles-logo.png" alt="Blason du Football Club Les Aigles du Congo" className="h-11 w-auto shrink-0 object-contain" />
+              <span className="flex flex-col leading-none">
+                <span className="text-lg font-bold uppercase tracking-[0.14em]">Les Aigles</span>
+                <span className="text-[0.68rem] font-semibold uppercase tracking-[0.34em] text-[#C8A44A]">du Congo</span>
+              </span>
             </Link>
             <Link href="/" className="inline-flex items-center gap-1.5 text-sm text-white/80 hover:text-white transition-colors">
               <ArrowLeft className="h-4 w-4" />
@@ -116,11 +116,11 @@ export default function Register() {
           {/* Contrôles du carrousel */}
           <div className="flex items-center justify-between">
             <div className="flex gap-2">
-              {ACTIVITY_IMAGES.map((_, i) => (
+              {gallerySlides.map((slideItem, i) => (
                 <button
-                  key={i}
+                  key={`${slideItem.src}-dot-${i}`}
                   onClick={() => goTo(i)}
-                  className={`h-2 rounded-full transition-all duration-300 ${i === slide ? "w-8 bg-white" : "w-2 bg-white/40 hover:bg-white/60"}`}
+                  className={`h-2 rounded-full transition-all duration-300 ${i === slide % gallerySlides.length ? "w-8 bg-white" : "w-2 bg-white/40 hover:bg-white/60"}`}
                   aria-label={`Aller à l'image ${i + 1}`}
                 />
               ))}
@@ -150,18 +150,21 @@ export default function Register() {
         <div className="w-full max-w-md">
           {/* Logo mobile */}
           <div className="lg:hidden text-center mb-8">
-            <Link href="/" className="inline-flex items-center gap-2 mb-4">
-              <Dumbbell className="h-8 w-8 text-primary-600 dark:text-primary-400" />
-              <span className="text-xl font-bold tracking-tight text-slate-900 dark:text-white">MoveUp</span>
+            <Link href="/" className="inline-flex items-center gap-2 mb-4">Remplissez ce formulaire pour inscription basique.
+              <img src="/aigles-logo.png" alt="Blason du Football Club Les Aigles du Congo" className="h-10 w-auto shrink-0 object-contain" />
+              <span className="flex flex-col leading-none text-left">
+                <span className="text-lg font-bold uppercase tracking-[0.14em] text-[#1A2A99] dark:text-white">Les Aigles</span>
+                <span className="text-[0.68rem] font-semibold uppercase tracking-[0.34em] text-[#C8A44A]">du Congo</span>
+              </span>
             </Link>
-            <h1 className="text-3xl font-extrabold text-slate-900 dark:text-white">Demande d'abonnement</h1>
-            <p className="mt-2 text-slate-500 dark:text-slate-400">Remplissez ce formulaire pour demander un abonnement basique.</p>
+            <h1 className="text-3xl font-extrabold text-slate-900 dark:text-white">Inscription</h1>
+            <p className="mt-2 text-slate-500 dark:text-slate-400"></p>
           </div>
 
           {/* Titre desktop */}
           <div className="hidden lg:block mb-8">
-            <h1 className="text-3xl font-extrabold text-slate-900 dark:text-white">Demande d'abonnement</h1>
-            <p className="mt-2 text-slate-500 dark:text-slate-400">Remplissez ce formulaire pour demander un abonnement basique.</p>
+            <h1 className="text-3xl font-extrabold text-slate-900 dark:text-white">Inscription</h1>
+            <p className="mt-2 text-slate-500 dark:text-slate-400">Remplissez ce formulaire pour inscription basique.</p>
           </div>
 
           <Card className="border-slate-200 dark:border-slate-800 shadow-sm">
@@ -169,7 +172,7 @@ export default function Register() {
               <form onSubmit={handleSubmit} className="space-y-4">
                 <div className="space-y-1.5">
                   <label htmlFor="name" className="text-sm font-medium text-slate-700 dark:text-slate-300">Nom complet</label>
-                  <Input id="name" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder="Jean Dupont" error={!!errors.name} />
+                  <Input id="name" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder="nom post-nom" error={!!errors.name} />
                   {errors.name && <p className="text-xs text-red-500">{errors.name}</p>}
                 </div>
 
@@ -208,7 +211,7 @@ export default function Register() {
                   <CheckCircle2 className="h-5 w-5 text-primary-600 dark:text-primary-400 mt-0.5 shrink-0" />
                   <div>
                     <p className="text-sm text-slate-700 dark:text-slate-300">
-                      Vous avez déjà laissé une demande d'abonnement ?
+                      Vous avez déjà laissé une Inscription ?
                     </p>
                     <Link href="/verification" className="mt-1 inline-block text-sm font-semibold text-primary-600 hover:underline dark:text-primary-400">
                       Vérifier le statut de ma demande →

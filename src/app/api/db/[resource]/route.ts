@@ -44,7 +44,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
       return NextResponse.json({ error: "Corps de requête JSON invalide." }, { status: 400 });
     }
     const created = await createRecord(resource, data);
-    // Notifications automatiques à chaque demande d'abonnement — sans bloquer la réponse.
+    // Notifications automatiques à chaque Inscription — sans bloquer la réponse.
     // Source unique de vérité (serveur) : e-mail + notif in-app pour le demandeur ET pour l'admin.
     if (resource === "subscriptionRequests") {
       const admin = adminEmail();
@@ -70,7 +70,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
             data: {
               userEmail: requesterEmail.toLowerCase(),
               title: "Demande envoyée",
-              message: `Votre demande d'abonnement ${payload.activityName ? `« ${payload.activityName} »` : ""} ${payload.planName ? `(${payload.planName})` : ""} a été envoyée. Un e-mail de confirmation vous a été adressé.`.trim(),
+              message: `Votre Inscription ${payload.activityName ? `« ${payload.activityName} »` : ""} ${payload.planName ? `(${payload.planName})` : ""} a été envoyée. Un e-mail de confirmation vous a été adressé.`.trim(),
               type: "info",
               audience: "Suivi de demande",
               createdAt: now,
@@ -91,7 +91,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
         .create({
           data: {
             userEmail: admin.toLowerCase(),
-            title: "Nouvelle demande d'abonnement",
+            title: "Nouvelle Inscription",
             message: `${payload.name} <${payload.email}> — ${payload.activityName} ${payload.planName ? `(${payload.planName})` : ""}`.trim(),
             type: "info",
             audience: "Admin",

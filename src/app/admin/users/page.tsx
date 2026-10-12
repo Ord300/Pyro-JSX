@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { Search, Plus, Edit2, Trash2, Eye } from "lucide-react";
 import { Button } from "@/src/components/ui/Button";
 import { Input } from "@/src/components/ui/Input";
@@ -13,8 +13,12 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { userSchema } from "@/src/schemas/user";
 import type { UserForm } from "@/src/schemas/user";
 import { useUsers, useCreateUser, useUpdateUser, useDeleteUser } from "@/src/hooks/queries/users";
+import { useSubscriptions } from "@/src/hooks/queries/subscriptions";
+import { getDynamicStatus } from "@/src/utils/subscriptionStatus";
 
 const statusVariant = (s: string) => (s === "Actif" ? "success" : s === "Suspendu" ? "danger" : "warning");
+const subStatusVariant = (s: string) =>
+  s === "Validée" ? "success" : s === "Expirée" ? "danger" : s === "Annulée" ? "danger" : "default";
 const roleVariant = (r: string) => (r === "Gestionnaire" ? "default" : r === "Abonné" ? "outline" : "default");
 
 export default function AdminUsers() {
@@ -24,6 +28,7 @@ export default function AdminUsers() {
   const [page, setPage] = useState(1);
   const perPage = 5;
   const { data: users = [] } = useUsers();
+  const { data: subscriptions = [] } = useSubscriptions();
   const createUser = useCreateUser();
   const updateUser = useUpdateUser();
   const deleteUser = useDeleteUser();
@@ -59,6 +64,28 @@ export default function AdminUsers() {
   const handleDelete = async (u: User) => {
     if (!confirm(`Supprimer ${u.name} ?`)) return;
     await deleteUser.mutateAsync(u.id);
+  };
+
+  const subByEmail = useMemo(() => {
+    const map = new Map<string, any>();
+    const sorted = [...(subscriptions as any[])].sort((a, b) => String(b.endDate || "").localeCompare(String(a.endDate || "")));
+    for (const s of sorted) {
+      const key = String(s.email || "").toLowerCase();
+      if (key && !map.has(key)) map.set(key, s);
+    }
+    return map;
+  }, [subscriptions]);
+
+  const dynSubStatus = (email?: string | null): string | null => {
+    if (!email) return null;
+    const sub = subByEmail.get(email.toLowerCase());
+    if (!sub) return null;
+    return getDynamicStatus(sub);
+  };
+
+  const subEndDate = (email?: string | null): string | null => {
+    if (!email) return null;
+    return subByEmail.get(email.toLowerCase())?.endDate ?? null;
   };
 
   const filtered = users.filter((u) =>
@@ -108,14 +135,18 @@ export default function AdminUsers() {
               <TableHead>Téléphone</TableHead>
               <TableHead>Rôle</TableHead>
               <TableHead>Statut</TableHead>
+              <TableHead>Abonnement</TableHead>
               <TableHead>Dernière connexion</TableHead>
               <TableHead>Actions</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {paginated.length === 0 ? (
-              <TableRow><TableCell colSpan={6} className="text-center text-slate-400 py-10">Aucun utilisateur trouvé.</TableCell></TableRow>
-            ) : paginated.map((user) => (
+              <TableRow><TableCell colSpan={7} className="text-center text-slate-400 py-10">Aucun utilisateur trouvé.</TableCell></TableRow>
+            ) : paginated.map((user) => {
+              const dyn = user.role === "Abonné" ? dynSubStatus(user.email) : null;
+              const end = user.role === "Abonné" ? subEndDate(user.email) : null;
+              return (
               <TableRow key={user.id}>
                 <TableCell>
                   <div className="flex items-center gap-3">
@@ -131,6 +162,18 @@ export default function AdminUsers() {
                 <TableCell className="text-slate-500">{user.phone}</TableCell>
                 <TableCell><Badge variant={roleVariant(user.role) as any} className="text-xs">{user.role}</Badge></TableCell>
                 <TableCell><Badge variant={statusVariant(user.status) as any} className="text-xs">{user.status}</Badge></TableCell>
+                <TableCell>
+                  {user.role !== "Abonné" ? (
+                    <span className="text-xs text-slate-400">—</span>
+                  ) : dyn ? (
+                    <div>
+                      <Badge variant={subStatusVariant(dyn) as any} className="text-xs">{dyn}</Badge>
+                      {dyn === "Expirée" && end && <p className="mt-1 text-[11px] text-red-500">Expiré le {end}</p>}
+                    </div>
+                  ) : (
+                    <Badge variant="default" className="text-xs">Sans abonnement</Badge>
+                  )}
+                </TableCell>
                 <TableCell className="text-slate-500 text-sm">{user.lastLogin}</TableCell>
                 <TableCell>
                   <div className="flex gap-1.5">
@@ -140,7 +183,8 @@ export default function AdminUsers() {
                   </div>
                 </TableCell>
               </TableRow>
-            ))}
+              );
+            })}
           </TableBody>
         </Table>
         {/* Pagination */}
@@ -162,7 +206,10 @@ export default function AdminUsers() {
 
       {/* Modal Détails */}
       <Modal isOpen={!!viewUser} onClose={() => setViewUser(null)} title="Détails de l'utilisateur">
-        {viewUser && (
+        {viewUser && (() => {
+          const dyn = viewUser.role === "Abonné" ? dynSubStatus(viewUser.email) : null;
+          const end = viewUser.role === "Abonné" ? subEndDate(viewUser.email) : null;
+          return (
           <div className="space-y-4">
             <div className="flex items-center gap-4">
               <div className="h-16 w-16 rounded-full bg-primary-100 dark:bg-primary-900/30 flex items-center justify-center text-xl font-bold text-primary-600 dark:text-primary-400">
@@ -170,7 +217,11 @@ export default function AdminUsers() {
               </div>
               <div>
                 <h3 className="text-lg font-bold text-slate-900 dark:text-white">{viewUser.name}</h3>
-                <Badge variant={statusVariant(viewUser.status) as any}>{viewUser.status}</Badge>
+                <div className="mt-1 flex flex-wrap items-center gap-2">
+                  <Badge variant={statusVariant(viewUser.status) as any}>{viewUser.status}</Badge>
+                  {dyn && <Badge variant={subStatusVariant(dyn) as any}>Abonnement : {dyn}</Badge>}
+                </div>
+                {dyn === "Expirée" && end && <p className="mt-1 text-xs text-red-500">Expiré le {end}</p>}
               </div>
             </div>
             {[["Email", viewUser.email], ["Téléphone", viewUser.phone], ["Rôle", viewUser.role], ["Dernière connexion", viewUser.lastLogin]].map(([label, val]) => (
@@ -180,7 +231,8 @@ export default function AdminUsers() {
               </div>
             ))}
           </div>
-        )}
+          );
+        })()}
       </Modal>
 
       {/* Modal Création / Édition */}

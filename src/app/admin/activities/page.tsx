@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Plus, Edit2, Trash2, Search, UserRound, Cake } from "lucide-react";
+import { Plus, Edit2, Trash2, Search, UserRound, Cake, Dumbbell } from "lucide-react";
 import { Button } from "@/src/components/ui/Button";
 import { Input } from "@/src/components/ui/Input";
 import { Badge } from "@/src/components/ui/Badge";
@@ -16,7 +16,7 @@ export default function AdminActivities() {
   const [search, setSearch] = useState("");
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editItem, setEditItem] = useState<Activity | null>(null);
-  const [form, setForm] = useState({ name: "", category: "", description: "", trainer: "", duration: "", capacity: "", priceWeek: "", priceMonth: "", priceYear: "", icon: "🏆", image: "", minAge: "", maxAge: "" });
+  const [form, setForm] = useState({ name: "", category: "", description: "", trainer: "", duration: "", capacity: "", priceMonth: "", priceYear: "", image: "", minAge: "", maxAge: "" });
 
   const { data: activitiesData = [], isLoading } = useActivities();
   const { data: trainersData = [] } = useTrainers();
@@ -46,8 +46,8 @@ export default function AdminActivities() {
     );
   });
 
-  const openCreate = () => { setEditItem(null); setForm({ name: "", category: "", description: "", trainer: "", duration: "", capacity: "", priceWeek: "", priceMonth: "", priceYear: "", icon: "🏆", image: "", minAge: "", maxAge: "" }); setIsModalOpen(true); };
-  const openEdit = (a: Activity) => { setEditItem(a); setForm({ name: a.name, category: a.category, description: a.description, trainer: a.trainer, duration: a.duration, capacity: String(a.capacity), priceWeek: String(a.priceWeek), priceMonth: String(a.priceMonth), priceYear: String(a.priceYear), icon: a.icon, image: a.image?.startsWith("data:") || a.image?.startsWith("http") ? a.image : "", minAge: a.minAge != null ? String(a.minAge) : "", maxAge: a.maxAge != null ? String(a.maxAge) : "" }); setIsModalOpen(true); };
+  const openCreate = () => { setEditItem(null); setForm({ name: "", category: "", description: "", trainer: "", duration: "", capacity: "", priceMonth: "", priceYear: "", image: "", minAge: "", maxAge: "" }); setIsModalOpen(true); };
+  const openEdit = (a: Activity) => { setEditItem(a); setForm({ name: a.name, category: a.category, description: a.description, trainer: a.trainer, duration: a.duration, capacity: String(a.capacity), priceMonth: String(a.priceMonth), priceYear: String(a.priceYear), image: a.image?.startsWith("data:") || a.image?.startsWith("http") ? a.image : "", minAge: a.minAge != null ? String(a.minAge) : "", maxAge: a.maxAge != null ? String(a.maxAge) : "" }); setIsModalOpen(true); };
   const handleDelete = async (id: number) => { if (!confirm("Supprimer cette activité ?")) return; await deleteActivity.mutateAsync(id); };
 
   const parseAge = (v: string): number | null => {
@@ -66,9 +66,9 @@ export default function AdminActivities() {
     if (minAge != null && maxAge != null && (minAge as number) > (maxAge as number)) { alert("L'âge minimum ne peut pas dépasser l'âge maximum."); return; }
     try {
       if (editItem) {
-        await updateActivity.mutateAsync({ id: editItem.id, data: { ...form, capacity: Number(form.capacity), priceWeek: Number(form.priceWeek), priceMonth: Number(form.priceMonth), priceYear: Number(form.priceYear), minAge, maxAge } as any });
+        await updateActivity.mutateAsync({ id: editItem.id, data: { ...form, capacity: Number(form.capacity), priceWeek: editItem.priceWeek ?? 0, priceMonth: Number(form.priceMonth), priceYear: Number(form.priceYear), minAge, maxAge } as any });
       } else {
-        await createActivity.mutateAsync({ ...form, capacity: Number(form.capacity), priceWeek: Number(form.priceWeek), priceMonth: Number(form.priceMonth), priceYear: Number(form.priceYear), minAge, maxAge } as any);
+        await createActivity.mutateAsync({ ...form, capacity: Number(form.capacity), priceWeek: 0, priceMonth: Number(form.priceMonth), priceYear: Number(form.priceYear), minAge, maxAge } as any);
       }
       setIsModalOpen(false);
     } catch (e: any) {
@@ -96,7 +96,7 @@ export default function AdminActivities() {
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
         {filtered.map((a) => (
           <div key={a.id} className="rounded-xl border border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-900 shadow-sm overflow-hidden hover:shadow-md transition-shadow">
-            {a.image?.startsWith("data:") || a.image?.startsWith("http") ? <img src={a.image} alt={a.name} className="h-28 w-full object-cover" /> : <div className="flex h-28 items-center justify-center bg-gradient-to-br from-primary-50 to-primary-100 text-5xl dark:from-primary-900/20 dark:to-primary-800/20">{a.icon}</div>}
+            {a.image?.startsWith("data:") || a.image?.startsWith("http") ? <img src={a.image} alt={a.name} className="h-28 w-full object-cover" /> : <div className="flex h-28 items-center justify-center bg-gradient-to-br from-primary-50 to-primary-100 text-5xl dark:from-primary-900/20 dark:to-primary-800/20">{a.icon ? a.icon : <Dumbbell className="h-12 w-12 text-primary-300 dark:text-primary-600" />}</div>}
             <div className="p-4">
               <div className="flex items-start justify-between">
                 <div>
@@ -125,8 +125,7 @@ export default function AdminActivities() {
                   )}
                 </div>
               </div>
-              <div className="mt-3 grid grid-cols-3 gap-1 text-xs text-center">
-                <div className="rounded-md bg-slate-50 dark:bg-slate-800 p-1.5"><p className="font-bold text-primary-600">${a.priceWeek}</p><p className="text-slate-400">sem.</p></div>
+              <div className="mt-3 grid grid-cols-2 gap-1 text-xs text-center">
                 <div className="rounded-md bg-slate-50 dark:bg-slate-800 p-1.5"><p className="font-bold text-primary-600">${a.priceMonth}</p><p className="text-slate-400">mois</p></div>
                 <div className="rounded-md bg-slate-50 dark:bg-slate-800 p-1.5"><p className="font-bold text-primary-600">${a.priceYear}</p><p className="text-slate-400">an</p></div>
               </div>
@@ -151,7 +150,6 @@ export default function AdminActivities() {
             { id: "category", label: "Catégorie", placeholder: "Sport collectif" },
             { id: "duration", label: "Durée", placeholder: "90 min" },
             { id: "capacity", label: "Capacité", placeholder: "22" },
-            { id: "icon", label: "Icône (emoji)", placeholder: "⚽" },
           ].map(({ id, label, placeholder }) => (
             <div key={id} className="space-y-1.5">
               <label className="text-sm font-medium text-slate-700 dark:text-slate-300">{label}</label>
@@ -183,10 +181,6 @@ export default function AdminActivities() {
             <label className="text-sm font-medium text-slate-700 dark:text-slate-300">Image de l'activité</label>
             <input type="file" accept="image/*" onChange={(event) => { const file = event.target.files?.[0]; if (!file) return; const reader = new FileReader(); reader.onload = () => setForm((current) => ({ ...current, image: String(reader.result) })); reader.readAsDataURL(file); }} className="block w-full rounded-lg border border-slate-300 text-sm file:mr-3 file:border-0 file:bg-primary-50 file:px-3 file:py-2 file:text-primary-700 dark:border-slate-700 dark:file:bg-primary-900/30 dark:file:text-primary-300" />
             {form.image && <img src={form.image} alt="Aperçu de l'activité" className="h-32 w-full rounded-lg object-cover" />}
-          </div>
-          <div className="space-y-1.5">
-            <label className="text-sm font-medium text-slate-700 dark:text-slate-300">Prix / semaine ($)</label>
-            <Input type="number" value={form.priceWeek} onChange={(e) => setForm({ ...form, priceWeek: e.target.value })} />
           </div>
           <div className="space-y-1.5">
             <label className="text-sm font-medium text-slate-700 dark:text-slate-300">Prix / mois ($)</label>

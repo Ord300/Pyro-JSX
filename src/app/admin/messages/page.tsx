@@ -110,7 +110,7 @@ export default function AdminMessages() {
     try {
       await messagesDB.create({
         email: selected.email,
-        userName: "Administration MoveUp",
+        userName: "Administration Aigles du congo",
         sender: "Admin",
         subject: selected.subject,
         body: draft.trim(),
@@ -124,7 +124,7 @@ export default function AdminMessages() {
         name: selected.name,
         subject: selected.subject,
         body: draft.trim(),
-        senderName: "Administration MoveUp",
+        senderName: "Administration Aigles du congo",
       }).catch(() => {});
     } finally {
       setSending(false);

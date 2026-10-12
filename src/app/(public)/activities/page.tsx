@@ -90,7 +90,7 @@ export default function Activities() {
                   )}
                   <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent" />
                   <span className="absolute right-3 top-3 rounded-full bg-white/90 px-3 py-1 text-xs font-bold text-primary-700 shadow backdrop-blur-sm dark:bg-slate-900/90 dark:text-primary-400">
-                    dès {activity.priceWeek} $
+                    dès {activity.priceMonth} $
                   </span>
                   <Badge className="absolute bottom-3 left-3 border-0 bg-white/90 text-xs text-primary-700 shadow backdrop-blur-sm dark:bg-slate-900/90 dark:text-primary-400">{activity.category}</Badge>
                 </div>
@@ -119,7 +119,7 @@ export default function Activities() {
                   <div className="mt-4 flex items-center justify-between border-t border-slate-100 pt-3 dark:border-slate-800">
                     <div>
                       <p className="text-xs text-slate-400">À partir de</p>
-                      <p className="text-lg font-bold text-primary-600 dark:text-primary-400">{activity.priceWeek} USD<span className="text-xs font-normal text-slate-400">/sem.</span></p>
+                      <p className="text-lg font-bold text-primary-600 dark:text-primary-400">{activity.priceMonth} USD<span className="text-xs font-normal text-slate-400">/mois</span></p>
                     </div>
                     <Link href="/register"><Button size="sm">S'abonner</Button></Link>
                   </div>

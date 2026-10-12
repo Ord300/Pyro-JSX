@@ -122,7 +122,7 @@ export default function UserMessages() {
             <span className="absolute bottom-0 right-0 h-3 w-3 rounded-full border-2 border-white bg-green-500 dark:border-slate-900" />
           </span>
           <div className="flex-1">
-            <h2 className="font-semibold text-slate-900 dark:text-white">Administration MoveUp</h2>
+            <h2 className="font-semibold text-slate-900 dark:text-white">Administration Aigles du congo</h2>
             <p className="text-xs text-slate-500 dark:text-slate-400">Généralement une réponse sous 24&nbsp;h · {messages.length} message{messages.length > 1 ? "s" : ""}</p>
           </div>
           <Badge variant="outline" className="hidden sm:inline-flex"><ShieldCheck className="mr-1 h-3 w-3" />Support officiel</Badge>

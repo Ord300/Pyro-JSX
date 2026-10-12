@@ -2,7 +2,7 @@
 
 export const mockUserSubscription = {
   id: 'ABN-2026-00042',
-  member: 'Jean Dupont',
+  member: 'nom post-nom',
   activity: 'Fitness',
   formula: 'Mensuelle',
   price: 45,

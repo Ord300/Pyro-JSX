@@ -240,7 +240,7 @@ export function SubscriptionWizard({ onComplete, onCancel }: SubscriptionWizardP
   const renderStep4 = () => (
     <div>
       <h3 className="mb-4 text-lg font-semibold text-slate-900 dark:text-white">Choisissez votre formule</h3>
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         {mockSubscriptionPlans.map((plan) => (
           <button
             key={plan.id}
@@ -361,7 +361,7 @@ export function SubscriptionWizard({ onComplete, onCancel }: SubscriptionWizardP
       </div>
       <h3 className="mt-6 text-2xl font-bold text-slate-900 dark:text-white">Abonnement confirmé !</h3>
       <p className="mt-2 text-slate-600 dark:text-slate-400">
-        Votre demande d'abonnement a été traitée avec succès.
+        Votre Inscription a été traitée avec succès.
       </p>
       <div className="mx-auto mt-6 max-w-md rounded-lg border border-slate-200 bg-slate-50 p-6 dark:border-slate-700 dark:bg-slate-800/50">
         <div className="space-y-3 text-sm">

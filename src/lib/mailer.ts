@@ -5,7 +5,7 @@
 //   SMTP_PORT=587
 //   SMTP_USER=votre.email@gmail.com
 //   SMTP_PASS=xxxx xxxx xxxx xxxx  (mot de passe d'application)
-//   SMTP_FROM="MoveUp Centre Sportif <votre.email@gmail.com>"
+//   SMTP_FROM="Aigles du congo Centre Sportif <votre.email@gmail.com>"
 // ============================================================
 
 import nodemailer from "nodemailer";

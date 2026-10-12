@@ -5,10 +5,13 @@ import { useEffect, useState } from "react";
 import { Card } from "@/src/components/ui/Card";
 import { Badge } from "@/src/components/ui/Badge";
 import { loadTrainerContext, phoneOf, type TrainerContext } from "@/src/services/trainerSpace";
-import { Activity, Users, UserCheck, UserX, ArrowRight, Dumbbell } from "lucide-react";
+import { getDynamicStatus } from "@/src/utils/subscriptionStatus";
+import { Activity, Users, UserCheck, UserX, ArrowRight, Dumbbell, TrendingUp, ClipboardCheck } from "lucide-react";
 
 const statusVariant = (s: string) =>
-  s === "Validée" ? "success" : s === "Expirée" ? "warning" : s === "Annulée" ? "danger" : "default";
+  s === "Validée" ? "success" : s === "Expirée" ? "danger" : s === "Annulée" ? "danger" : "default";
+
+const dynamicOf = (s: any): string => String(s?.dynamicStatus ?? getDynamicStatus(s));
 
 export default function TrainerDashboard() {
   const [ctx, setCtx] = useState<TrainerContext | null>(null);
@@ -35,14 +38,14 @@ export default function TrainerDashboard() {
     );
   }
 
-  const active = ctx.mySubscriptions.filter((s) => s.status === "Validée");
-  const expired = ctx.mySubscriptions.filter((s) => s.status === "Expirée");
+  const active = ctx.mySubscriptions.filter((s) => dynamicOf(s) === "Validée");
+  const expired = ctx.mySubscriptions.filter((s) => dynamicOf(s) === "Expirée");
 
   const stats = [
     { label: "Mes activités", value: ctx.myActivityNames.length, icon: Activity, color: "text-sky-600 dark:text-sky-400 bg-sky-50 dark:bg-sky-900/20" },
     { label: "Abonnés actifs", value: active.length, icon: UserCheck, color: "text-green-600 dark:text-green-400 bg-green-50 dark:bg-green-900/20" },
     { label: "Total abonnés", value: ctx.mySubscriptions.length, icon: Users, color: "text-cyan-600 dark:text-cyan-400 bg-cyan-50 dark:bg-cyan-900/20" },
-    { label: "Expirés", value: expired.length, icon: UserX, color: "text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/20" },
+    { label: "Expirés", value: expired.length, icon: UserX, color: "text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/20" },
   ];
 
   const recent = [...ctx.mySubscriptions].sort((a, b) => b.id - a.id).slice(0, 5);
@@ -72,6 +75,25 @@ export default function TrainerDashboard() {
             </div>
           </Card>
         ))}
+      </div>
+
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+        <Link href="/trainer/performance" className="group flex items-center gap-4 rounded-xl border border-sky-200 bg-gradient-to-r from-sky-600 to-cyan-600 p-5 text-white shadow-sm transition-shadow hover:shadow-md">
+          <span className="rounded-lg bg-white/20 p-3"><TrendingUp className="h-6 w-6" /></span>
+          <span className="flex-1">
+            <span className="block font-semibold">Suivi des performances</span>
+            <span className="block text-xs text-sky-100">Progrès, objectifs et résultats de vos abonnés</span>
+          </span>
+          <ArrowRight className="h-5 w-5 transition-transform group-hover:translate-x-1" />
+        </Link>
+        <Link href="/trainer/attendance" className="group flex items-center gap-4 rounded-xl border border-slate-200 bg-white p-5 shadow-sm transition-shadow hover:shadow-md dark:border-slate-700 dark:bg-slate-900">
+          <span className="rounded-lg bg-sky-50 p-3 dark:bg-sky-900/20"><ClipboardCheck className="h-6 w-6 text-sky-600 dark:text-sky-400" /></span>
+          <span className="flex-1">
+            <span className="block font-semibold text-slate-900 dark:text-white">Marquer les présences</span>
+            <span className="block text-xs text-slate-500">Appel de présence à chaque séance</span>
+          </span>
+          <ArrowRight className="h-5 w-5 text-slate-400 transition-transform group-hover:translate-x-1" />
+        </Link>
       </div>
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
@@ -125,7 +147,7 @@ export default function TrainerDashboard() {
                   <p className="truncate font-medium text-slate-900 dark:text-white">{s.userName}</p>
                   <p className="truncate text-xs text-slate-500">{s.activityName} · {phoneOf(ctx.users, s.email)}</p>
                 </div>
-                <Badge variant={statusVariant(s.status) as any}>{s.status}</Badge>
+                <Badge variant={statusVariant(dynamicOf(s)) as any}>{dynamicOf(s)}</Badge>
               </div>
             ))}
           </div>

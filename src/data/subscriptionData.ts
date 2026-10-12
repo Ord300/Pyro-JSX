@@ -2,14 +2,6 @@ import type { Subscription, SubscriptionPlan, SubscriptionRequest } from '../typ
 
 export const mockSubscriptionPlans: SubscriptionPlan[] = [
   {
-    id: 'week',
-    name: 'Formule Semaine',
-    period: 'Semaine',
-    price: 15,
-    currency: 'USD',
-    features: ['Accès 7 jours', '1 activité au choix', 'Vestiaires inclus', 'Support de base'],
-  },
-  {
     id: 'month',
     name: 'Formule Mensuelle',
     period: 'Mois',
@@ -32,7 +24,7 @@ export const mockSubscriptions: Subscription[] = [
   {
     id: 1,
     userId: 1,
-    userName: 'Jean Dupont',
+    userName: 'nom post-nom',
     planId: 'month',
     planName: 'Formule Mensuelle',
     activityId: 2,
@@ -99,7 +91,7 @@ export const mockSubscriptionRequests: SubscriptionRequest[] = [
   {
     id: 1,
     userId: 1,
-    userName: 'Jean Dupont',
+    userName: 'nom post-nom',
     email: 'jean.dupont@email.com',
     phone: '+243 812 345 678',
     activityId: 2,

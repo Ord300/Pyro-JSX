@@ -74,7 +74,7 @@ export const processPayment = async (request: PaymentRequest): Promise<PaymentRe
   if (providerResult.success) {
     const payment = await paymentsDB.create<Payment>({
       userId: 1,
-      userName: "Jean Dupont",
+      userName: "nom post-nom",
       amount: request.amount,
       currency: request.currency,
       method: request.method,

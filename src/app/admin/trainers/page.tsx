@@ -196,7 +196,7 @@ export default function AdminTrainers() {
           </div>
           <div>
             <label className="text-sm text-slate-600">Email (compte de connexion)</label>
-            <Input {...register("email" as any)} type="email" placeholder="coach@moveup.cd" />
+            <Input {...register("email" as any)} type="email" placeholder="coach@Aigles du congo.cd" />
             {(errors as any).email && <p className="text-xs text-red-500 mt-1">{String((errors as any).email.message)}</p>}
             <p className="mt-1 text-xs text-slate-400">Un compte « Entraîneur » (mot de passe initial : password) est créé automatiquement avec cet email.</p>
           </div>

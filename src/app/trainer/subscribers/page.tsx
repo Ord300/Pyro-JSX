@@ -1,7 +1,8 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { Search, Eye, X, Mail, Send, CalendarCheck } from "lucide-react";
+import Link from "next/link";
+import { Search, Eye, X, Mail, Send, CalendarCheck, TrendingUp } from "lucide-react";
 import { Card } from "@/src/components/ui/Card";
 import { Badge } from "@/src/components/ui/Badge";
 import { Button } from "@/src/components/ui/Button";
@@ -9,12 +10,15 @@ import { Input } from "@/src/components/ui/Input";
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/src/components/ui/Table";
 import { Modal } from "@/src/components/ui/Modal";
 import { subscriptionsDB, messagesDB, notificationsDB } from "@/src/services/dbService";
+import { getDynamicStatus, getDaysLeft } from "@/src/utils/subscriptionStatus";
 import { notifyImportantAction, sendImportantEmail } from "@/src/services/notifyService";
 import { loadTrainerContext, phoneOf, presenceStats, type TrainerContext } from "@/src/services/trainerSpace";
 import { useToast } from "@/src/contexts/ToastContext";
 
 const statusVariant = (s: string) =>
-  s === "Validée" ? "success" : s === "Expirée" ? "warning" : s === "Annulée" ? "danger" : "default";
+  s === "Validée" ? "success" : s === "Expirée" ? "danger" : s === "Annulée" ? "danger" : "default";
+
+const dynamicOf = (s: any): string => String(s?.dynamicStatus ?? getDynamicStatus(s));
 
 const MANAGEABLE_STATUSES = ["Validée", "Expirée", "Annulée"];
 
@@ -44,11 +48,23 @@ export default function TrainerSubscribers() {
     const q = search.toLowerCase();
     return ctx.mySubscriptions.filter((s) => {
       if (activityFilter !== "Toutes" && s.activityName !== activityFilter) return false;
-      if (statusFilter !== "Tous" && s.status !== statusFilter) return false;
+      // Filtre sur le statut DYNAMIQUE (Validée expirée par date => Expirée)
+      if (statusFilter !== "Tous" && dynamicOf(s) !== statusFilter) return false;
       if (q && !`${s.userName ?? ""} ${s.email ?? ""} ${s.memberNumber ?? ""}`.toLowerCase().includes(q)) return false;
       return true;
     });
   }, [ctx, search, activityFilter, statusFilter]);
+
+  const counts = useMemo(() => {
+    if (!ctx) return { total: 0, valides: 0, expires: 0, annules: 0 };
+    const list = ctx.mySubscriptions;
+    return {
+      total: list.length,
+      valides: list.filter((s) => dynamicOf(s) === "Validée").length,
+      expires: list.filter((s) => dynamicOf(s) === "Expirée").length,
+      annules: list.filter((s) => dynamicOf(s) === "Annulée").length,
+    };
+  }, [ctx]);
 
   const openContact = (s: any) => {
     setContactTarget(s);
@@ -101,7 +117,8 @@ export default function TrainerSubscribers() {
     try {
       const updated = await subscriptionsDB.update(id, { status });
       if (updated) {
-        setSelected((prev: any) => (prev ? { ...prev, status } : prev));
+        const withDyn = { ...(updated as any), dynamicStatus: getDynamicStatus({ ...(updated as any), status }) };
+        setSelected((prev: any) => (prev ? { ...prev, status, dynamicStatus: withDyn.dynamicStatus } : prev));
         await reload();
         toast.addToast(`Abonnement « ${status} »`, "success");
         // Notifie l'abonné concerné (in-app + e-mail)
@@ -141,6 +158,10 @@ export default function TrainerSubscribers() {
         <h1 className="text-2xl font-bold tracking-tight text-sky-950 dark:text-sky-50">Mes abonnés</h1>
         <p className="mt-1 text-sm text-sky-900/60 dark:text-sky-200/60">
           {filtered.length} abonné(s) sur vos activités ({ctx.myActivityNames.join(", ") || "aucune activité"})
+          {" · "}
+          <span className="font-semibold text-green-600 dark:text-green-400">{counts.valides} actif(s)</span>
+          {" · "}
+          <span className="font-semibold text-red-600 dark:text-red-400">{counts.expires} expiré(s)</span>
         </p>
       </div>
 
@@ -151,18 +172,18 @@ export default function TrainerSubscribers() {
             <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
             <Input placeholder="Rechercher par nom, email ou matricule…" className="pl-9" value={search} onChange={(e) => setSearch(e.target.value)} />
           </div>
-          <select value={activityFilter} onChange={(e) => setActivityFilter(e.target.value)} className="rounded-md border border-slate-300 bg-transparent px-3 py-2 text-sm dark:border-slate-700">
+          <select value={activityFilter} onChange={(e) => setActivityFilter(e.target.value)} className="rounded-md border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-900 shadow-sm focus:border-sky-500 focus:outline-none focus:ring-2 focus:ring-sky-500 dark:border-slate-600 dark:bg-slate-800 dark:text-white [&>option]:bg-white [&>option]:text-slate-900 dark:[&>option]:bg-slate-800 dark:[&>option]:text-white">
             <option>Toutes</option>
             {ctx.myActivityNames.map((n) => <option key={n}>{n}</option>)}
           </select>
           <div className="flex gap-2">
-            {["Tous", "Validée", "Expirée", "Annulée"].map((s) => (
+            {[["Tous", counts.total], ["Validée", counts.valides], ["Expirée", counts.expires], ["Annulée", counts.annules]].map(([s, n]) => (
               <button
-                key={s}
-                onClick={() => setStatusFilter(s)}
+                key={String(s)}
+                onClick={() => setStatusFilter(String(s))}
                 className={`rounded-lg px-3 py-2 text-xs font-medium transition-colors ${statusFilter === s ? "bg-sky-600 text-white" : "bg-slate-100 text-slate-600 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-300"}`}
               >
-                {s}
+                {String(s)} ({Number(n)})
               </button>
             ))}
           </div>
@@ -201,7 +222,14 @@ export default function TrainerSubscribers() {
                 <TableCell className="text-sm">{s.activityName}</TableCell>
                 <TableCell className="text-sm text-slate-500">{s.planName}</TableCell>
                 <TableCell className="text-xs text-slate-500">{s.startDate} → {s.endDate}</TableCell>
-                <TableCell><Badge variant={statusVariant(s.status) as any}>{s.status}</Badge></TableCell>
+                <TableCell>
+                  <Badge variant={statusVariant(dynamicOf(s)) as any} title={dynamicOf(s) === "Expirée" ? `Expiré le ${s.endDate}` : s.status}>
+                    {dynamicOf(s)}
+                  </Badge>
+                  {dynamicOf(s) === "Expirée" && s.status === "Validée" && (
+                    <p className="mt-1 text-[11px] text-red-500">Expiré le {s.endDate}</p>
+                  )}
+                </TableCell>
                 <TableCell>
                   <div className="flex gap-1">
                     <Button size="icon" variant="ghost" className="h-8 w-8" title="Voir / gérer" onClick={() => setSelected(s)}>
@@ -222,6 +250,8 @@ export default function TrainerSubscribers() {
       <Modal isOpen={!!selected} onClose={() => setSelected(null)} title="Fiche abonné">
         {selected && (() => {
           const stats = presenceStats(ctx.myAttendances, selected.email);
+          const dyn = dynamicOf(selected);
+          const days = getDaysLeft(selected);
           return (
           <div className="space-y-4">
             <div className="flex items-center gap-4">
@@ -230,12 +260,22 @@ export default function TrainerSubscribers() {
               </div>
               <div className="flex-1">
                 <h3 className="text-lg font-bold text-slate-900 dark:text-white">{selected.userName}</h3>
-                <Badge variant={statusVariant(selected.status) as any}>{selected.status}</Badge>
+                <div className="mt-1 flex flex-wrap items-center gap-2">
+                  <Badge variant={statusVariant(dyn) as any}>{dyn}</Badge>
+                  {dyn === "Expirée" ? (
+                    <span className="text-xs text-red-500">Expiré le {selected.endDate}{selected.status === "Validée" ? " (calcul auto)" : ""}</span>
+                  ) : (
+                    <span className="text-xs text-green-600 dark:text-green-400">{days} jour{days > 1 ? "s" : ""} restant{days > 1 ? "s" : ""}</span>
+                  )}
+                </div>
               </div>
               <Button size="sm" onClick={() => { setSelected(null); openContact(selected); }}>
                 <Mail className="mr-1.5 h-4 w-4" />Contacter
               </Button>
             </div>
+            <Link href={`/trainer/performance?email=${encodeURIComponent(selected.email)}`} className="flex items-center justify-center gap-2 rounded-lg bg-sky-600 px-3 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-sky-700">
+              <TrendingUp className="h-4 w-4" />Voir le suivi des performances
+            </Link>
             {[
               ["Email", selected.email],
               ["Téléphone", phoneOf(ctx.users, selected.email)],

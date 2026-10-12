@@ -32,7 +32,7 @@ export const subscriptionFlow = {
   },
   requestByEmail: async (email: string) => {
     const requests = await subscriptionFlow.requests();
-    return requests.filter((request) => request.email.toLowerCase() === email.trim().toLowerCase() && request.subject === "Demande d'abonnement").sort((a, b) => b.id - a.id)[0];
+    return requests.filter((request) => request.email.toLowerCase() === email.trim().toLowerCase() && request.subject === "Inscription").sort((a, b) => b.id - a.id)[0];
   },
   requestsByEmail: async (email: string) => {
     const requests = await subscriptionFlow.requests();
@@ -74,10 +74,9 @@ export const subscriptionFlow = {
     }
     const start = new Date();
     const end = new Date(start);
-    if (plan.period === "Semaine") end.setDate(end.getDate() + 7);
-    else if (plan.period === "Mois") end.setMonth(end.getMonth() + 1);
+    if (plan.period === "Mois") end.setMonth(end.getMonth() + 1);
     else end.setFullYear(end.getFullYear() + 1);
-    const payment = await paymentsDB.create<any>({ userId: 0, userName: request.name, email: request.email, requestId: request.id, activityId: activity.id, amount: activity[`price${plan.period === "Semaine" ? "Week" : plan.period === "Mois" ? "Month" : "Year"}` as keyof Activity], currency: "USD", method, status: "Réussi", reference: `PAY-${Date.now()}`, phoneNumber: phone, description: `Abonnement ${plan.period} - ${activity.name} - ${plan.name}`, createdAt: start.toISOString(), paidAt: start.toISOString() });
+    const payment = await paymentsDB.create<any>({ userId: 0, userName: request.name, email: request.email, requestId: request.id, activityId: activity.id, amount: activity[plan.period === "Mois" ? "priceMonth" : "priceYear" as keyof Activity], currency: "USD", method, status: "Réussi", reference: `PAY-${Date.now()}`, phoneNumber: phone, description: `Abonnement ${plan.period} - ${activity.name} - ${plan.name}`, createdAt: start.toISOString(), paidAt: start.toISOString() });
     const allSubscriptions = await subscriptionsDB.getAll<any>();
     const memberNumber = `ABO-${start.getFullYear()}-${String(allSubscriptions.length + 1).padStart(4, "0")}`;
     const subscription = await subscriptionsDB.create<any>({ requestId: request.id, userId: 0, userName: request.name, email: request.email, memberNumber, planId: plan.id, planName: plan.name, activityId: activity.id, activityName: activity.name, status: "Validée", startDate: start.toISOString().slice(0, 10), endDate: end.toISOString().slice(0, 10), amount: payment.amount, currency: "USD", paymentMethod: method, paymentReference: payment.reference, createdAt: start.toISOString() });

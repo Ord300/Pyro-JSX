@@ -31,8 +31,8 @@ export default function AdminRequests() {
       const all = await subscriptionFlow.requests();
       setRequests(
         all
-          .filter((request) => request.subject === "Demande d'abonnement" || (request.subject && request.subject.toLowerCase().includes("abonnement")))
-          .map((request) => ({ id: String(request.id), name: request.name, email: request.email, phone: request.phone, subject: request.subject || "Demande d'abonnement", date: (request.createdAt || "").slice(0, 10), status: request.status, message: request.description || "" }))
+          .filter((request) => request.subject === "Inscription" || (request.subject && request.subject.toLowerCase().includes("abonnement")))
+          .map((request) => ({ id: String(request.id), name: request.name, email: request.email, phone: request.phone, subject: request.subject || "Inscription", date: (request.createdAt || "").slice(0, 10), status: request.status, message: request.description || "" }))
       );
     };
     load();
@@ -54,9 +54,9 @@ export default function AdminRequests() {
         userEmail: target.email.toLowerCase(),
         title:
           status === "Confirmée"
-            ? "Demande d'abonnement confirmée"
+            ? "Inscription confirmée"
             : status === "Refusée"
-              ? "Demande d'abonnement refusée"
+              ? "Inscription refusée"
               : "Confirmation de demande annulée",
         message:
           status === "Confirmée"

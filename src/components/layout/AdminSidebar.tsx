@@ -14,12 +14,10 @@ import {
   Settings,
   Activity,
   Box,
-  Image,
-  LogOut
+  Image
 } from "lucide-react";
 import { cn } from "@/src/utils/cn";
-import { useAuth } from "@/src/contexts/AuthContext";
-import { useRouter } from "next/navigation";
+import { LogoutButton } from "@/src/components/auth/LogoutButton";
 
 const menuGroups = [
   {
@@ -39,7 +37,6 @@ const menuGroups = [
     items: [
       { name: "Activités", path: "/admin/activities", icon: Activity },
       { name: "Entraîneurs", path: "/admin/trainers", icon: Dumbbell },
-      { name: "Équipements", path: "/admin/equipment", icon: Box },
       { name: "Galerie", path: "/admin/gallery", icon: Image },
     ]
   },
@@ -67,13 +64,6 @@ const menuGroups = [
 
 export function AdminSidebar({ isOpen, setIsOpen }: { isOpen: boolean; setIsOpen: (val: boolean) => void }) {
   const pathname = usePathname();
-  const { user, logout } = useAuth();
-  const router = useRouter();
-
-  const handleLogout = () => {
-    logout();
-    router.push("/login");
-  };
 
   return (
     <>
@@ -90,17 +80,13 @@ export function AdminSidebar({ isOpen, setIsOpen }: { isOpen: boolean; setIsOpen
         "fixed inset-y-0 left-0 z-50 w-64 transform border-r border-violet-500/15 bg-slate-950/95 transition-transform duration-300 ease-in-out lg:static lg:translate-x-0 flex flex-col",
         isOpen ? "translate-x-0" : "-translate-x-full"
       )}>
-        <div className="flex h-16 shrink-0 items-center px-5 border-b border-violet-500/15">
-          <Link href="/admin" className="flex items-center gap-3">
-            <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-violet-500 to-fuchsia-600 shadow-lg shadow-violet-500/30">
-              <Dumbbell className="h-5 w-5 text-white" />
-            </span>
-            <span className="text-xl font-bold tracking-tight text-white">
-              MoveUp
-              <span className="ml-2 rounded-md border border-violet-400/40 bg-violet-500/15 px-1.5 py-0.5 align-middle text-[10px] font-bold uppercase tracking-widest text-violet-300">
-                Admin
-              </span>
-            </span>
+        <div className="flex h-20 shrink-0 items-center justify-center px-5 border-b border-violet-500/15">
+          <Link href="/admin" className="flex items-center justify-center">
+            <img
+              src="/aigles-logo.png"
+              alt="Blason du Football Club Les Aigles du Congo"
+              className="h-14 w-auto shrink-0 object-contain"
+            />
           </Link>
         </div>
 
@@ -140,25 +126,8 @@ export function AdminSidebar({ isOpen, setIsOpen }: { isOpen: boolean; setIsOpen
         </div>
 
         <div className="border-t border-violet-500/15 p-4 space-y-3">
-          {user && (
-            <div className="flex items-center gap-3 px-3">
-              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-violet-500 to-fuchsia-600 text-sm font-bold text-white">
-                {(user.name?.[0] ?? user.email?.[0] ?? "A").toUpperCase()}
-              </div>
-              <div className="min-w-0 flex-1">
-                <p className="truncate text-sm font-medium text-slate-200">{user.name ?? "Admin"}</p>
-                <p className="truncate text-xs text-slate-500">{user.email ?? ""}</p>
-              </div>
-            </div>
-          )}
-          <button
-            onClick={handleLogout}
-            className="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium text-slate-400 transition-colors hover:bg-red-500/10 hover:text-red-300"
-          >
-            <LogOut className="h-5 w-5" />
-            Déconnexion
-          </button>
-          <p className="px-3 text-xs text-slate-500">MoveUp · Console d&apos;administration</p>
+          <LogoutButton variant="sidebar" onDone={() => setIsOpen(false)} />
+          <p className="px-3 text-xs text-slate-500">Aigles du congo · Console d&apos;administration</p>
         </div>
       </aside>
     </>

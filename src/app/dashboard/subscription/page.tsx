@@ -10,6 +10,7 @@ import { Modal } from "@/src/components/ui/Modal";
 import { SubscriptionWizard } from "@/src/components/subscription/SubscriptionWizard";
 import { useActivities } from "@/src/hooks/queries/activities";
 import { subscriptionsDB } from "@/src/services/dbService";
+import { isSubscriptionActive, isSubscriptionExpired, getDaysLeft } from "@/src/utils/subscriptionStatus";
 import { downloadMemberCard, ensureCardToken, generateQrDataUrl, getCardLoginUrl } from "@/src/services/cardService";
 import { addPeriod, resolvePlanPeriod, subscriptionFlow } from "@/src/services/subscriptionFlowService";
 import { CreditCard, QrCode, Download, RefreshCw, CheckCircle2, X, CalendarDays, ShieldCheck } from "lucide-react";
@@ -19,6 +20,7 @@ export default function UserSubscription() {
   const [showWizard, setShowWizard] = useState(false);
   const [lastReference, setLastReference] = useState("");
   const [activeSubscription, setActiveSubscription] = useState<any | null>(null);
+  const [isExpiredView, setIsExpiredView] = useState(false);
   const [cardToken, setCardToken] = useState("");
   const [qrDataUrl, setQrDataUrl] = useState("");
   const [showQr, setShowQr] = useState(false);
@@ -34,9 +36,15 @@ export default function UserSubscription() {
       const currentEmail = localStorage.getItem("current_user_email") || "";
       if (!currentEmail) return;
       const subscriptions = await subscriptionsDB.getAll<any>();
-      const found =
-        subscriptions.find((subscription) => subscription.status === "Validée" && subscription.email?.toLowerCase() === currentEmail) || null;
+      const mine = subscriptions
+        .filter((s: any) => s.email?.toLowerCase() === currentEmail.toLowerCase())
+        .sort((a: any, b: any) => String(b.endDate || "").localeCompare(String(a.endDate || "")));
+      // Dynamique : actif = Validée + endDate >= aujourd'hui, sinon on affiche le plus récent expiré.
+      const active = mine.find((s: any) => isSubscriptionActive(s)) || null;
+      const expired = !active ? mine.find((s: any) => isSubscriptionExpired(s)) || null : null;
+      const found = active || expired;
       setActiveSubscription(found);
+      setIsExpiredView(!active && !!expired);
       if (found) {
         try {
           const token = await ensureCardToken(found);
@@ -159,7 +167,15 @@ export default function UserSubscription() {
         <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
           {/* Virtual Card */}
           <div className="lg:col-span-2">
-            <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-emerald-600 via-emerald-700 to-teal-900 p-8 text-white shadow-lg">
+            {isExpiredView && (
+              <div className="mb-4 flex items-center gap-3 rounded-lg border border-red-200 bg-red-50 p-4 dark:border-red-800 dark:bg-red-900/20">
+                <X className="h-5 w-5 shrink-0 text-red-600 dark:text-red-400" />
+                <p className="text-sm text-red-800 dark:text-red-200">
+                  Votre abonnement a expiré le <strong>{activeSubscription.endDate}</strong>. Renouvelez-le pour réactiver votre carte.
+                </p>
+              </div>
+            )}
+            <div className={`relative overflow-hidden rounded-2xl p-8 text-white shadow-lg ${isExpiredView ? "bg-gradient-to-br from-slate-600 via-slate-700 to-red-900" : "bg-gradient-to-br from-emerald-600 via-emerald-700 to-teal-900"}`}>
               <div className="absolute -right-8 -top-8 h-40 w-40 rounded-full bg-white/10" />
               <div className="absolute -bottom-16 -right-16 h-56 w-56 rounded-full bg-white/5" />
 
@@ -169,7 +185,7 @@ export default function UserSubscription() {
                     <CreditCard className="h-8 w-8" />
                     <span className="text-lg font-bold tracking-wider">CARTE ABONNÉ</span>
                   </div>
-                  <Badge variant="success" className="bg-green-500/20 text-green-200">ACTIVE</Badge>
+                  <Badge variant={isExpiredView ? "danger" : "success"} className={isExpiredView ? "bg-red-500/30 text-red-100" : "bg-green-500/20 text-green-200"}>{isExpiredView ? "EXPIRÉE" : "ACTIVE"}</Badge>
                 </div>
 
                 <div className="mt-8">
@@ -239,7 +255,7 @@ export default function UserSubscription() {
               <div className="mt-4 space-y-3 text-sm">
                 <div className="flex justify-between">
                   <span className="text-slate-500 dark:text-slate-400">Statut</span>
-                  <Badge variant="success">Validée</Badge>
+                  <Badge variant={isExpiredView ? "danger" : "success"}>{isExpiredView ? "Expirée" : "Validée"}</Badge>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-slate-500 dark:text-slate-400">Montant</span>
@@ -258,7 +274,7 @@ export default function UserSubscription() {
                 <div className="flex justify-between border-t border-slate-100 pt-3 dark:border-slate-800">
                   <span className="text-slate-500 dark:text-slate-400">Temps restant</span>
                   {(() => {
-                    const daysLeft = Math.ceil((new Date(activeSubscription.endDate).getTime() - Date.now()) / 86_400_000);
+                    const daysLeft = getDaysLeft(activeSubscription);
                     return daysLeft > 0 ? (
                       <Badge variant={daysLeft <= 7 ? "warning" : "success"}>
                         {daysLeft} jour{daysLeft > 1 ? "s" : ""} restant{daysLeft > 1 ? "s" : ""}

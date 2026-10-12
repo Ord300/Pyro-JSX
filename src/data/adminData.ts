@@ -31,7 +31,7 @@ export const reservationData = [
 ];
 
 export const recentPayments = [
-  { id: 'PAY-001', name: 'Jean Dupont', activity: 'Fitness', amount: 45, method: 'M-Pesa', status: 'Réussi', date: '2026-08-16' },
+  { id: 'PAY-001', name: 'nom post-nom', activity: 'Fitness', amount: 45, method: 'M-Pesa', status: 'Réussi', date: '2026-08-16' },
   { id: 'PAY-002', name: 'Marie Koné', activity: 'Yoga', amount: 30, method: 'Orange Money', status: 'Réussi', date: '2026-08-16' },
   { id: 'PAY-003', name: 'Karim Bensalah', activity: 'Boxe', amount: 55, method: 'M-Pesa', status: 'En attente', date: '2026-08-15' },
   { id: 'PAY-004', name: 'Sophie Laurent', activity: 'Football', amount: 450, method: 'Orange Money', status: 'Réussi', date: '2026-08-15' },
@@ -39,7 +39,7 @@ export const recentPayments = [
 ];
 
 export const recentReservations = [
-  { id: 'RES-001', member: 'Jean Dupont', activity: 'Fitness', place: 'Salle Fitness', date: '2026-08-17', time: '09:00', status: 'Confirmée' },
+  { id: 'RES-001', member: 'nom post-nom', activity: 'Fitness', place: 'Salle Fitness', date: '2026-08-17', time: '09:00', status: 'Confirmée' },
   { id: 'RES-002', member: 'Marie Koné', activity: 'Yoga', place: 'Studio Yoga', date: '2026-08-17', time: '10:30', status: 'Confirmée' },
   { id: 'RES-003', member: 'Karim Bensalah', activity: 'Boxe', place: 'Salle Boxe', date: '2026-08-17', time: '14:00', status: 'En attente' },
   { id: 'RES-004', member: 'Sophie Laurent', activity: 'Football', place: 'Terrain A', date: '2026-08-18', time: '07:00', status: 'Confirmée' },

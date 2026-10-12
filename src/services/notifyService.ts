@@ -37,7 +37,7 @@ function inAppMessage(action: ImportantAction, p: NotifyPayload): string {
   if (p.message) return p.message;
   switch (action) {
     case "demande_created":
-      return `Votre demande d'abonnement ${p.activityName ? `« ${p.activityName} »` : ""} ${p.planName ? `(${p.planName})` : ""} a été envoyée. Un e-mail de confirmation vous a été adressé.`;
+      return `Votre Inscription ${p.activityName ? `« ${p.activityName} »` : ""} ${p.planName ? `(${p.planName})` : ""} a été envoyée. Un e-mail de confirmation vous a été adressé.`;
     case "demande_confirmed":
       return `Bonne nouvelle ${p.name || ""} ! Votre demande a été confirmée. Finalisez votre abonnement. Un e-mail vous a été envoyé.`;
     case "demande_rejected":

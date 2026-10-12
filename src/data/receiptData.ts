@@ -5,7 +5,7 @@ export const mockReceipts: Receipt[] = [
     id: 1,
     reference: 'REC-2026-0001',
     userId: 1,
-    userName: 'Jean Dupont',
+    userName: 'nom post-nom',
     type: 'Abonnement',
     amount: 45,
     currency: 'USD',

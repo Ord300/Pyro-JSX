@@ -39,7 +39,7 @@ export interface TemplateData {
   [key: string]: any;
 }
 
-const APP_NAME = process.env.NEXT_PUBLIC_APP_NAME || "MoveUp — Centre Sportif";
+const APP_NAME = process.env.NEXT_PUBLIC_APP_NAME || "Aigles du congo — Centre Sportif";
 const BRAND = "#0d7a5f";
 
 function layout(title: string, greeting: string, contentHtml: string, footerNote?: string): string {
@@ -72,11 +72,11 @@ export function buildEmail(action: ImportantAction, d: TemplateData = {}): { sub
 
   switch (action) {
     case "demande_created": {
-      const subject = `Demande d'abonnement reçue — ${d.activityName || "MoveUp"}`;
+      const subject = `Inscription reçue — ${d.activityName || "Aigles du congo"}`;
       const html = layout(
-        "Demande d'abonnement",
+        "Inscription",
         name,
-        `<p style="font-size:14px;color:#334155">Nous avons bien reçu votre demande d'abonnement. L'administration va l'examiner.</p>
+        `<p style="font-size:14px;color:#334155">Nous avons bien reçu votre Inscription. L'administration va l'examiner.</p>
         ${d.activityName ? row("Activité", d.activityName) : ""}
         ${d.planName ? row("Formule", d.planName) : ""}
         ${row("Statut", "En attente de validation")}`
@@ -84,11 +84,11 @@ export function buildEmail(action: ImportantAction, d: TemplateData = {}): { sub
       return { subject, html, text: `${subject}\nActivité: ${d.activityName}\nFormule: ${d.planName}\nStatut: En attente` };
     }
     case "nouvelle_demande_admin": {
-      const subject = `Nouvelle demande d'abonnement — ${d.name || d.email} (${d.activityName || "MoveUp"})`;
+      const subject = `Nouvelle Inscription — ${d.name || d.email} (${d.activityName || "Aigles du congo"})`;
       const html = layout(
         "Nouvelle demande à traiter",
         "Admin",
-        `<p style="font-size:14px;color:#334155">Une nouvelle demande d'abonnement vient d'être soumise sur la plateforme :</p>
+        `<p style="font-size:14px;color:#334155">Une nouvelle Inscription vient d'être soumise sur la plateforme :</p>
         ${d.name ? row("Demandeur", d.name) : ""}
         ${d.email ? row("E-mail", d.email) : ""}
         ${d.phone ? row("Téléphone", d.phone) : ""}
@@ -111,7 +111,7 @@ export function buildEmail(action: ImportantAction, d: TemplateData = {}): { sub
       return { subject, html, text: subject };
     }
     case "demande_rejected": {
-      const subject = `Demande d'abonnement — décision`;
+      const subject = `Inscription — décision`;
       const html = layout(
         "Décision sur votre demande",
         name,

@@ -21,6 +21,8 @@ const DB_KEYS = {
   gallery: "gallery",
   messages: "messages",
   notifications: "notifications",
+  performances: "performances",
+  goals: "goals",
 };
 
 const isBrowser = () => typeof window !== "undefined";
@@ -253,6 +255,24 @@ export const notificationsDB = {
   create: <T = any>(data: any) => db.create<T>(DB_KEYS.notifications, data),
   update: <T = any>(id: number, data: any) => db.update<T>(DB_KEYS.notifications, id, data),
   delete: (id: number) => db.delete(DB_KEYS.notifications, id),
+  subscribe: (callback: () => void) => db.subscribe(callback),
+};
+
+export const performancesDB = {
+  getAll: <T = any>() => db.getAll<T>(DB_KEYS.performances),
+  getById: <T = any>(id: number) => db.getById<T>(DB_KEYS.performances, id),
+  create: <T = any>(data: any) => db.create<T>(DB_KEYS.performances, data),
+  update: <T = any>(id: number, data: any) => db.update<T>(DB_KEYS.performances, id, data),
+  delete: (id: number) => db.delete(DB_KEYS.performances, id),
+  subscribe: (callback: () => void) => db.subscribe(callback),
+};
+
+export const goalsDB = {
+  getAll: <T = any>() => db.getAll<T>(DB_KEYS.goals),
+  getById: <T = any>(id: number) => db.getById<T>(DB_KEYS.goals, id),
+  create: <T = any>(data: any) => db.create<T>(DB_KEYS.goals, data),
+  update: <T = any>(id: number, data: any) => db.update<T>(DB_KEYS.goals, id, data),
+  delete: (id: number) => db.delete(DB_KEYS.goals, id),
   subscribe: (callback: () => void) => db.subscribe(callback),
 };
 

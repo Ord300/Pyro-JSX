@@ -1,22 +1,16 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { Bell, Menu, MessageSquare, Search, LogOut } from 'lucide-react';
+import { Bell, Menu, MessageSquare, Search } from 'lucide-react';
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { Button } from '../ui/Button';
 import { messagesDB } from '@/src/services/dbService';
 import { useAuth } from '@/src/contexts/AuthContext';
+import { LogoutButton } from '@/src/components/auth/LogoutButton';
 
 export function AdminNavbar({ onMenuClick }: { onMenuClick: () => void }) {
   const [unreadMessages, setUnreadMessages] = useState(0);
-  const { user, logout } = useAuth();
-  const router = useRouter();
-
-  const handleLogout = () => {
-    logout();
-    router.push("/login");
-  };
+  const { user } = useAuth();
 
   const load = useCallback(async () => {
     const rows = await messagesDB.getAll<any>();
@@ -73,9 +67,7 @@ export function AdminNavbar({ onMenuClick }: { onMenuClick: () => void }) {
             {(user?.name?.[0] ?? user?.email?.[0] ?? "A").toUpperCase()}
           </div>
           <span className="hidden text-sm font-medium text-slate-200 sm:block">{user?.name ?? "Admin"}</span>
-          <Button variant="ghost" size="icon" onClick={handleLogout} title="Déconnexion" className="text-slate-300 hover:bg-red-500/10 hover:text-red-300">
-            <LogOut className="h-5 w-5" />
-          </Button>
+          <LogoutButton variant="icon" />
         </div>
       </div>
     </header>
