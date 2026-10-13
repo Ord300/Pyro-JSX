@@ -11,6 +11,7 @@ import { useActivities } from "@/src/hooks/queries/activities";
 import { usersDB } from "@/src/services/dbService";
 import { notifyImportantAction } from "@/src/services/notifyService";
 import { useToast } from "@/src/contexts/ToastContext";
+import { confirmAction } from "@/src/components/ui/confirm";
 import type { Trainer } from "@/src/data/mockData";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -120,7 +121,7 @@ export default function AdminTrainers() {
     setIsModalOpen(false);
   };
 
-  const handleDelete = async (id: number) => { if (!confirm("Supprimer ce coach ?")) return; await deleteTrainer.mutateAsync(id); };
+  const handleDelete = async (id: number) => { if (!(await confirmAction({ title: "Supprimer le coach", message: "Supprimer ce coach ?", confirmLabel: "Supprimer" }))) return; await deleteTrainer.mutateAsync(id); };
 
   const filtered = trainers.filter((t) =>
     t.name.toLowerCase().includes(search.toLowerCase()) ||

@@ -10,7 +10,7 @@ type AuthContextValue = {
   user: User;
   isLoading: boolean;
   login: (email: string, password: string) => Promise<LoginResult>;
-  logout: () => void;
+  logout: () => Promise<void>;
   isAdmin: boolean;
 };
 
@@ -20,21 +20,29 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [user, setUser] = useState<User>(null);
   const [isLoading, setIsLoading] = useState(true);
 
-  // Restauration de session : on relit l'e-mail stocké puis on
-  // recharge le profil depuis la base de données (SQLite via API).
+  // Restauration de session : le cookie httpOnly signé fait foi.
+  // L'e-mail local n'est qu'un pense-bête d'affichage/filtrage.
   useEffect(() => {
     let cancelled = false;
     const restore = async () => {
       if (typeof window === "undefined") return;
-      const email = localStorage.getItem("current_user_email");
-      if (!email) {
-        setIsLoading(false);
-        return;
-      }
       try {
-        const response = await fetch(`/api/auth/session?email=${encodeURIComponent(email)}`, { cache: "no-store" });
+        const response = await fetch("/api/auth/session", { cache: "no-store" });
+        if (!response.ok) {
+          if (!cancelled) setUser(null);
+          return;
+        }
         const found = await response.json();
-        if (!cancelled) setUser(found ?? null);
+        if (!cancelled) {
+          setUser(found ?? null);
+          if (found?.email) {
+            try {
+              localStorage.setItem("current_user_email", String(found.email).toLowerCase());
+            } catch {
+              // ignore
+            }
+          }
+        }
       } catch {
         if (!cancelled) setUser(null);
       } finally {
@@ -56,7 +64,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       });
       const data = await response.json();
       if (!response.ok) return { ok: false, message: data?.error || "Connexion impossible." };
-      localStorage.setItem("current_user_email", data.email.toLowerCase());
+      try {
+        localStorage.setItem("current_user_email", String(data.email).toLowerCase());
+      } catch {
+        // ignore
+      }
       setUser(data);
       return { ok: true, user: data };
     } catch {
@@ -64,9 +76,18 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  const logout = () => {
-    localStorage.removeItem("current_user_email");
-    localStorage.removeItem("current_subscriber_email");
+  const logout = async () => {
+    try {
+      await fetch("/api/auth/logout", { method: "POST" });
+    } catch {
+      // ignore : on nettoie quand même côté client
+    }
+    try {
+      localStorage.removeItem("current_user_email");
+      localStorage.removeItem("current_subscriber_email");
+    } catch {
+      // ignore (SSR)
+    }
     setUser(null);
   };
 

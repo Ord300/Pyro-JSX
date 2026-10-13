@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { usePathname, redirect } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { AdminSidebar } from "@/src/components/layout/AdminSidebar";
 import { AdminNavbar } from "@/src/components/layout/AdminNavbar";
 import { useAuth } from "@/src/contexts/AuthContext";
@@ -13,10 +13,17 @@ export default function AdminLayout({
 }) {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const pathname = usePathname();
+  const router = useRouter();
   const auth = useAuth();
-  if (!auth.isLoading && (!auth.user || auth.user.role !== "Gestionnaire")) {
-    redirect("/login");
-  }
+
+  useEffect(() => {
+    if (auth.isLoading) return;
+    if (!auth.user || auth.user.role !== "Gestionnaire") {
+      router.replace("/login");
+    } else if (auth.user.mustChangePassword) {
+      router.replace("/change-password");
+    }
+  }, [auth.isLoading, auth.user, router]);
 
   return (
     <div className="admin-scope flex h-screen bg-dark-background text-slate-50 overflow-hidden">

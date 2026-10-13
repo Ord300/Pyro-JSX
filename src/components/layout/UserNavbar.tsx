@@ -5,6 +5,7 @@ import { Bell, Menu } from "lucide-react";
 import { Button } from "../ui/Button";
 import Link from "next/link";
 import { notificationsDB, usersDB } from "@/src/services/dbService";
+import { LogoutButton } from "@/src/components/auth/LogoutButton";
 
 export function UserNavbar({ onMenuClick }: { onMenuClick: () => void }) {
   const [name, setName] = useState("Abonné");
@@ -61,11 +62,7 @@ export function UserNavbar({ onMenuClick }: { onMenuClick: () => void }) {
             {name.split(/[.\s_-]/).map((part: string) => part[0]).join("").slice(0, 2).toUpperCase()}
           </div>
           <span className="hidden text-sm font-medium text-emerald-100 sm:block">{name}</span>
-          <Link href="/">
-            <Button variant="ghost" size="sm" className="hidden lg:block ml-2 text-xs text-emerald-200 hover:bg-emerald-500/10 hover:text-white">
-              Quitter
-            </Button>
-          </Link>
+          <LogoutButton variant="icon" />
         </div>
       </div>
     </header>

@@ -7,6 +7,7 @@ import { Input } from "@/src/components/ui/Input";
 import { Badge } from "@/src/components/ui/Badge";
 import { Modal } from "@/src/components/ui/Modal";
 import { useActivities, useCreateActivity, useUpdateActivity, useDeleteActivity } from "@/src/hooks/queries/activities";
+import { confirmAction } from "@/src/components/ui/confirm";
 import { useTrainers } from "@/src/hooks/queries/trainers";
 import type { Activity } from "@/src/data/mockData";
 import { formatAgeRange } from "@/src/data/mockData";
@@ -16,7 +17,8 @@ export default function AdminActivities() {
   const [search, setSearch] = useState("");
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editItem, setEditItem] = useState<Activity | null>(null);
-  const [form, setForm] = useState({ name: "", category: "", description: "", trainer: "", duration: "", capacity: "", priceMonth: "", priceYear: "", image: "", minAge: "", maxAge: "" });
+  const [formError, setFormError] = useState("");
+  const [form, setForm] = useState({ name: "", category: "", description: "", trainer: "", duration: "", capacity: "", priceWeek: "", priceMonth: "", priceYear: "", image: "", minAge: "", maxAge: "" });
 
   const { data: activitiesData = [], isLoading } = useActivities();
   const { data: trainersData = [] } = useTrainers();
@@ -46,9 +48,9 @@ export default function AdminActivities() {
     );
   });
 
-  const openCreate = () => { setEditItem(null); setForm({ name: "", category: "", description: "", trainer: "", duration: "", capacity: "", priceMonth: "", priceYear: "", image: "", minAge: "", maxAge: "" }); setIsModalOpen(true); };
-  const openEdit = (a: Activity) => { setEditItem(a); setForm({ name: a.name, category: a.category, description: a.description, trainer: a.trainer, duration: a.duration, capacity: String(a.capacity), priceMonth: String(a.priceMonth), priceYear: String(a.priceYear), image: a.image?.startsWith("data:") || a.image?.startsWith("http") ? a.image : "", minAge: a.minAge != null ? String(a.minAge) : "", maxAge: a.maxAge != null ? String(a.maxAge) : "" }); setIsModalOpen(true); };
-  const handleDelete = async (id: number) => { if (!confirm("Supprimer cette activité ?")) return; await deleteActivity.mutateAsync(id); };
+  const openCreate = () => { setEditItem(null); setFormError(""); setForm({ name: "", category: "", description: "", trainer: "", duration: "", capacity: "", priceWeek: "", priceMonth: "", priceYear: "", image: "", minAge: "", maxAge: "" }); setIsModalOpen(true); };
+  const openEdit = (a: Activity) => { setEditItem(a); setFormError(""); setForm({ name: a.name, category: a.category, description: a.description, trainer: a.trainer, duration: a.duration, capacity: String(a.capacity), priceWeek: String(a.priceWeek ?? ""), priceMonth: String(a.priceMonth), priceYear: String(a.priceYear), image: a.image?.startsWith("data:") || a.image?.startsWith("http") ? a.image : "", minAge: a.minAge != null ? String(a.minAge) : "", maxAge: a.maxAge != null ? String(a.maxAge) : "" }); setIsModalOpen(true); };
+  const handleDelete = async (id: number) => { if (!(await confirmAction({ title: "Supprimer l'activité", message: "Supprimer cette activité ?", confirmLabel: "Supprimer" }))) return; await deleteActivity.mutateAsync(id); };
 
   const parseAge = (v: string): number | null => {
     const t = v.trim();
@@ -61,18 +63,19 @@ export default function AdminActivities() {
   const handleSave = async () => {
     const minAge = parseAge(form.minAge);
     const maxAge = parseAge(form.maxAge);
-    if (minAge !== null && (Number.isNaN(minAge as any) || minAge! < 0)) { alert("Âge minimum invalide (0-120)."); return; }
-    if (maxAge !== null && (Number.isNaN(maxAge as any) || maxAge! < 0)) { alert("Âge maximum invalide (0-120)."); return; }
-    if (minAge != null && maxAge != null && (minAge as number) > (maxAge as number)) { alert("L'âge minimum ne peut pas dépasser l'âge maximum."); return; }
+    if (minAge !== null && (Number.isNaN(minAge as any) || minAge! < 0)) { setFormError("Âge minimum invalide (0-120)."); return; }
+    if (maxAge !== null && (Number.isNaN(maxAge as any) || maxAge! < 0)) { setFormError("Âge maximum invalide (0-120)."); return; }
+    if (minAge != null && maxAge != null && (minAge as number) > (maxAge as number)) { setFormError("L'âge minimum ne peut pas dépasser l'âge maximum."); return; }
+    setFormError("");
     try {
       if (editItem) {
-        await updateActivity.mutateAsync({ id: editItem.id, data: { ...form, capacity: Number(form.capacity), priceWeek: editItem.priceWeek ?? 0, priceMonth: Number(form.priceMonth), priceYear: Number(form.priceYear), minAge, maxAge } as any });
+        await updateActivity.mutateAsync({ id: editItem.id, data: { ...form, capacity: Number(form.capacity), priceWeek: Number(form.priceWeek), priceMonth: Number(form.priceMonth), priceYear: Number(form.priceYear), minAge, maxAge } as any });
       } else {
-        await createActivity.mutateAsync({ ...form, capacity: Number(form.capacity), priceWeek: 0, priceMonth: Number(form.priceMonth), priceYear: Number(form.priceYear), minAge, maxAge } as any);
+        await createActivity.mutateAsync({ ...form, capacity: Number(form.capacity), priceWeek: Number(form.priceWeek), priceMonth: Number(form.priceMonth), priceYear: Number(form.priceYear), minAge, maxAge } as any );
       }
       setIsModalOpen(false);
     } catch (e: any) {
-      alert(e?.message || "Enregistrement impossible.");
+      setFormError(e?.message || "Enregistrement impossible.");
     }
   };
 
@@ -144,6 +147,11 @@ export default function AdminActivities() {
 
       {/* Modal Créer/Modifier */}
       <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title={editItem ? "Modifier l'activité" : "Nouvelle activité"} className="max-w-2xl">
+        {formError && (
+          <div className="mb-4 rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700 dark:border-red-800 dark:bg-red-900/20 dark:text-red-300">
+            {formError}
+          </div>
+        )}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           {[
             { id: "name", label: "Nom", placeholder: "Football" },
@@ -181,6 +189,10 @@ export default function AdminActivities() {
             <label className="text-sm font-medium text-slate-700 dark:text-slate-300">Image de l'activité</label>
             <input type="file" accept="image/*" onChange={(event) => { const file = event.target.files?.[0]; if (!file) return; const reader = new FileReader(); reader.onload = () => setForm((current) => ({ ...current, image: String(reader.result) })); reader.readAsDataURL(file); }} className="block w-full rounded-lg border border-slate-300 text-sm file:mr-3 file:border-0 file:bg-primary-50 file:px-3 file:py-2 file:text-primary-700 dark:border-slate-700 dark:file:bg-primary-900/30 dark:file:text-primary-300" />
             {form.image && <img src={form.image} alt="Aperçu de l'activité" className="h-32 w-full rounded-lg object-cover" />}
+          </div>
+          <div className="space-y-1.5">
+            <label className="text-sm font-medium text-slate-700 dark:text-slate-300">Prix / semaine ($)</label>
+            <Input type="number" value={form.priceWeek} onChange={(e) => setForm({ ...form, priceWeek: e.target.value })} />
           </div>
           <div className="space-y-1.5">
             <label className="text-sm font-medium text-slate-700 dark:text-slate-300">Prix / mois ($)</label>

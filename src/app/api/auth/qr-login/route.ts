@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/src/lib/prisma";
+import { setSessionCookie } from "@/src/lib/session";
 
 // ============================================================
 // CONNEXION PAR QR CARTE — POST { token }
@@ -45,7 +46,9 @@ export async function POST(request: NextRequest) {
       where: { id: user.id },
       data: { lastLogin: new Date().toISOString().slice(0, 10) },
     });
-    return NextResponse.json(publicUser(user));
+    const response = NextResponse.json(publicUser(user));
+    setSessionCookie(response, user.email);
+    return response;
   } catch (error: any) {
     return NextResponse.json({ error: error?.message || "Connexion impossible" }, { status: 500 });
   }

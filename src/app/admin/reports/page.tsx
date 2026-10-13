@@ -6,11 +6,42 @@ import { Badge } from "@/src/components/ui/Badge";
 import { Button } from "@/src/components/ui/Button";
 import { cn } from "@/src/utils/cn";
 import { paymentsDB, subscriptionsDB, reservationsDB, usersDB } from "@/src/services/dbService";
-import { isSubscriptionActive, isSubscriptionExpired } from "@/src/utils/subscriptionStatus";
+import { isSubscriptionActive, isSubscriptionExpired, getDynamicStatus } from "@/src/utils/subscriptionStatus";
 import { TrendingUp, Users, DollarSign, Calendar, Download, BarChart3, PieChart } from "lucide-react";
 
 type ReportPeriod = "week" | "month" | "year";
 type ReportType = "revenue" | "subscriptions" | "reservations" | "users";
+
+const PERIOD_DAYS: Record<ReportPeriod, number> = {
+  week: 7,
+  month: 30,
+  year: 365,
+};
+
+// Même logique que le dashboard admin : undefined si non calculable.
+const pctChange = (cur: number, prev: number): number | undefined => {
+  if (prev <= 0) return undefined;
+  return Math.round(((cur - prev) / prev) * 1000) / 10;
+};
+
+const getItemDateValue = (item: any): string | undefined =>
+  item?.paidAt || item?.createdAt || item?.date || item?.startDate;
+
+const toValidDate = (value: any): Date | null => {
+  if (value === undefined || value === null || value === "") return null;
+  const d = new Date(value);
+  return Number.isNaN(d.getTime()) ? null : d;
+};
+
+const formatVariation = (change: number | undefined): string => {
+  if (change === undefined) return "—";
+  const sign = change > 0 ? "↑ " : change < 0 ? "↓ " : "→ ";
+  const prefix = change > 0 ? "+" : "";
+  return `${sign}${prefix}${change}%`;
+};
+
+const escapeCsvCell = (value: unknown): string =>
+  `"${String(value ?? "").replace(/"/g, '""')}"`;
 
 export default function AdminReports() {
   const [period, setPeriod] = useState<ReportPeriod>("month");
@@ -38,52 +69,185 @@ export default function AdminReports() {
     load();
   }, []);
 
-  const totalRevenue = payments
+  // ---- Plage courante : dateFrom/dateTo prioritaires, sinon période ----
+  const now = new Date();
+  const hasCustomRange = dateFrom !== "" || dateTo !== "";
+  const rangeStart: Date = hasCustomRange
+    ? (dateFrom ? new Date(`${dateFrom}T00:00:00`) : new Date(0))
+    : new Date(now.getTime() - PERIOD_DAYS[period] * 86_400_000);
+  const rangeEnd: Date = hasCustomRange
+    ? (dateTo ? new Date(`${dateTo}T23:59:59.999`) : now)
+    : now;
+  const rangeDurationMs = Math.max(rangeEnd.getTime() - rangeStart.getTime(), 0);
+  const prevStart = new Date(rangeStart.getTime() - rangeDurationMs);
+  const prevEnd = rangeStart;
+
+  const isInRange = (item: any, start: Date, end: Date): boolean => {
+    const d = toValidDate(getItemDateValue(item));
+    if (!d) return false;
+    return d.getTime() >= start.getTime() && d.getTime() <= end.getTime();
+  };
+
+  const filteredPayments = payments.filter((p) => isInRange(p, rangeStart, rangeEnd));
+  const filteredSubscriptions = subscriptions.filter((s) => isInRange(s, rangeStart, rangeEnd));
+  const filteredReservations = reservations.filter((r) => isInRange(r, rangeStart, rangeEnd));
+  const filteredUsers = users.filter((u) => isInRange(u, rangeStart, rangeEnd));
+
+  const prevPayments = payments.filter((p) => isInRange(p, prevStart, prevEnd));
+  const prevSubscriptions = subscriptions.filter((s) => isInRange(s, prevStart, prevEnd));
+  const prevReservations = reservations.filter((r) => isInRange(r, prevStart, prevEnd));
+  const prevUsers = users.filter((u) => isInRange(u, prevStart, prevEnd));
+
+  const paymentAmount = (p: any) => Number(p.total ?? p.amount) || 0;
+
+  const totalRevenue = filteredPayments
     .filter((p) => p.status === "Réussi")
-    .reduce((sum, p) => sum + (p.total ?? p.amount ?? 0), 0);
+    .reduce((sum, p) => sum + paymentAmount(p), 0);
+  const prevRevenue = prevPayments
+    .filter((p) => p.status === "Réussi")
+    .reduce((sum, p) => sum + paymentAmount(p), 0);
 
-  const activeSubscriptions = subscriptions.filter((s) => isSubscriptionActive(s)).length;
-  const expiredSubscriptions = subscriptions.filter((s) => isSubscriptionExpired(s)).length;
-  const pendingSubscriptions = subscriptions.filter((s) => s.status === "En attente" || s.status === "pending").length;
-  const confirmedReservations = reservations.filter((r) => r.status === "Confirmée" || r.status === "confirmed").length;
+  const activeSubscriptions = filteredSubscriptions.filter((s) => isSubscriptionActive(s)).length;
+  const prevActiveSubscriptions = prevSubscriptions.filter((s) => isSubscriptionActive(s)).length;
+  const expiredSubscriptions = filteredSubscriptions.filter((s) => isSubscriptionExpired(s)).length;
+  const pendingSubscriptions = filteredSubscriptions.filter((s) => getDynamicStatus(s) === "En attente").length;
+  const prevPendingSubscriptions = prevSubscriptions.filter((s) => getDynamicStatus(s) === "En attente").length;
+  const confirmedReservations = filteredReservations.filter((r) => r.status === "Confirmée" || r.status === "confirmed").length;
+  const prevConfirmedReservations = prevReservations.filter((r) => r.status === "Confirmée" || r.status === "confirmed").length;
 
-  const revenueByMethod = payments
+  const conversionRate = (filteredSubscriptions.length / Math.max(filteredUsers.length, 1)) * 100;
+  const prevConversionRate = (prevSubscriptions.length / Math.max(prevUsers.length, 1)) * 100;
+
+  const revenueChange = pctChange(totalRevenue, prevRevenue);
+  const activeSubsChange = pctChange(activeSubscriptions, prevActiveSubscriptions);
+  const reservationsChange = pctChange(filteredReservations.length, prevReservations.length);
+  const conversionChange = pctChange(
+    Math.round(conversionRate * 10) / 10,
+    Math.round(prevConversionRate * 10) / 10
+  );
+  const pendingChange = pctChange(pendingSubscriptions, prevPendingSubscriptions);
+  const confirmedChange = pctChange(confirmedReservations, prevConfirmedReservations);
+
+  const revenueByMethod = filteredPayments
     .filter((p) => p.status === "Réussi")
     .reduce((acc, p) => {
       const m = p.method || "Autre";
-      acc[m] = (acc[m] || 0) + (p.total ?? p.amount ?? 0);
+      acc[m] = (acc[m] || 0) + paymentAmount(p);
       return acc;
     }, {} as Record<string, number>);
 
-  const subscriptionByStatus = subscriptions.reduce((acc, s) => {
-    const k = s.status || "unknown";
+  const subscriptionByStatus = filteredSubscriptions.reduce((acc, s) => {
+    const k = getDynamicStatus(s) || "unknown";
     acc[k] = (acc[k] || 0) + 1;
     return acc;
   }, {} as Record<string, number>);
 
-  const reservationByStatus = reservations.reduce((acc, r) => {
+  const reservationByStatus = filteredReservations.reduce((acc, r) => {
     const k = r.status || "unknown";
     acc[k] = (acc[k] || 0) + 1;
     return acc;
   }, {} as Record<string, number>);
 
-  const kpis = [
-    { label: "Revenu total", value: `${totalRevenue} USD`, icon: DollarSign, color: "text-green-600 dark:text-green-400", change: "+12.5%" },
-    { label: "Abonnés actifs", value: activeSubscriptions, icon: Users, color: "text-blue-600 dark:text-blue-400", change: "+8.2%" },
-    { label: "Réservations", value: reservations.length, icon: Calendar, color: "text-primary-600 dark:text-primary-400", change: "+15.3%" },
-    { label: "Taux de conversion", value: `${Math.round((subscriptions.length / Math.max(users.length, 1)) * 100)}%`, icon: TrendingUp, color: "text-amber-600 dark:text-amber-400", change: "+3.1%" },
+  const userByRole = filteredUsers.reduce((acc, u) => {
+    const k = u.role || "Sans rôle";
+    acc[k] = (acc[k] || 0) + 1;
+    return acc;
+  }, {} as Record<string, number>);
+
+  const userByStatus = filteredUsers.reduce((acc, u) => {
+    const k = u.status || (u.isActive === false ? "Inactif" : "Actif");
+    acc[k] = (acc[k] || 0) + 1;
+    return acc;
+  }, {} as Record<string, number>);
+
+  const kpis: { label: string; value: string | number; icon: typeof DollarSign; color: string; change: number | undefined }[] = [
+    { label: "Revenu total", value: `${totalRevenue} USD`, icon: DollarSign, color: "text-green-600 dark:text-green-400", change: revenueChange },
+    { label: "Abonnés actifs", value: activeSubscriptions, icon: Users, color: "text-blue-600 dark:text-blue-400", change: activeSubsChange },
+    { label: "Réservations", value: filteredReservations.length, icon: Calendar, color: "text-primary-600 dark:text-primary-400", change: reservationsChange },
+    { label: "Taux de conversion", value: `${Math.round(conversionRate)}%`, icon: TrendingUp, color: "text-amber-600 dark:text-amber-400", change: conversionChange },
   ];
 
+  const getChartData = (): { label: string; value: number }[] => {
+    if (reportType === "revenue")
+      return Object.entries(revenueByMethod).map(([label, value]) => ({ label, value: Number(value) }));
+    if (reportType === "subscriptions")
+      return Object.entries(subscriptionByStatus).map(([label, value]) => ({ label, value: Number(value) }));
+    if (reportType === "users")
+      return Object.entries(userByRole).map(([label, value]) => ({ label, value: Number(value) }));
+    return Object.entries(reservationByStatus).map(([label, value]) => ({ label, value: Number(value) }));
+  };
+
+  const getPieData = (): { label: string; value: number }[] => {
+    if (reportType === "revenue")
+      return Object.entries(revenueByMethod).map(([label, value]) => ({ label, value: Number(value) }));
+    if (reportType === "subscriptions")
+      return Object.entries(subscriptionByStatus).map(([label, value]) => ({ label, value: Number(value) }));
+    if (reportType === "users")
+      return Object.entries(userByStatus).map(([label, value]) => ({ label, value: Number(value) }));
+    return Object.entries(reservationByStatus).map(([label, value]) => ({ label, value: Number(value) }));
+  };
+
   const handleExport = () => {
-    console.log("Export des rapports");
+    let headers: string[] = [];
+    let rows: string[][] = [];
+
+    if (reportType === "revenue") {
+      headers = ["Date", "Utilisateur", "Méthode", "Statut", "Montant (USD)"];
+      rows = filteredPayments.map((p) => [
+        String(getItemDateValue(p) ?? ""),
+        String(p.userName ?? p.name ?? p.email ?? ""),
+        String(p.method ?? "Autre"),
+        String(p.status ?? ""),
+        String(paymentAmount(p)),
+      ]);
+    } else if (reportType === "subscriptions") {
+      headers = ["Email", "Statut dynamique", "Début", "Fin", "Créé le"];
+      rows = filteredSubscriptions.map((s) => [
+        String(s.email ?? s.userName ?? s.name ?? ""),
+        String(getDynamicStatus(s)),
+        String(s.startDate ?? ""),
+        String(s.endDate ?? ""),
+        String(s.createdAt ?? ""),
+      ]);
+    } else if (reportType === "reservations") {
+      headers = ["Utilisateur", "Activité", "Date", "Statut"];
+      rows = filteredReservations.map((r) => [
+        String(r.userName ?? r.name ?? r.email ?? ""),
+        String(r.activityName ?? r.activity ?? ""),
+        String(getItemDateValue(r) ?? ""),
+        String(r.status ?? ""),
+      ]);
+    } else {
+      headers = ["Nom", "Email", "Rôle", "Statut", "Créé le"];
+      rows = filteredUsers.map((u) => [
+        String(u.name ?? u.userName ?? ""),
+        String(u.email ?? ""),
+        String(u.role ?? "Sans rôle"),
+        String(u.status ?? (u.isActive === false ? "Inactif" : "Actif")),
+        String(getItemDateValue(u) ?? ""),
+      ]);
+    }
+
+    const csv = [headers, ...rows]
+      .map((line) => line.map(escapeCsvCell).join(";"))
+      .join("\r\n");
+    const blob = new Blob(["\uFEFF" + csv], { type: "text/csv;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `rapport-${reportType}-${period}.csv`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
   };
 
   const renderBarChart = () => {
-    const data: { label: string; value: number }[] = reportType === "revenue"
-      ? Object.entries(revenueByMethod).map(([label, value]) => ({ label, value: Number(value) }))
-      : reportType === "subscriptions"
-        ? Object.entries(subscriptionByStatus).map(([label, value]) => ({ label, value: Number(value) }))
-        : Object.entries(reservationByStatus).map(([label, value]) => ({ label, value: Number(value) }));
+    const data = getChartData();
+
+    if (data.length === 0) {
+      return <p className="mt-6 text-sm text-slate-500 dark:text-slate-400">Aucune donnée sur cette période.</p>;
+    }
 
     const maxValue = Math.max(...data.map((d) => d.value), 1);
 
@@ -112,11 +276,11 @@ export default function AdminReports() {
   };
 
   const renderPieChart = () => {
-    const data: { label: string; value: number }[] = reportType === "revenue"
-      ? Object.entries(revenueByMethod).map(([label, value]) => ({ label, value: Number(value) }))
-      : reportType === "subscriptions"
-        ? Object.entries(subscriptionByStatus).map(([label, value]) => ({ label, value: Number(value) }))
-        : Object.entries(reservationByStatus).map(([label, value]) => ({ label, value: Number(value) }));
+    const data = getPieData();
+
+    if (data.length === 0) {
+      return <p className="mt-6 text-sm text-slate-500 dark:text-slate-400">Aucune donnée sur cette période.</p>;
+    }
 
     const total = data.reduce((sum, d) => sum + d.value, 0);
     const colors = ["#4F46E5", "#10B981", "#F59E0B", "#EF4444", "#3B82F6", "#8B5CF6"];
@@ -128,7 +292,7 @@ export default function AdminReports() {
         <div className="relative h-48 w-48">
           <svg viewBox="0 0 100 100" className="h-full w-full -rotate-90">
             {data.map((item, index) => {
-              const percentage = (item.value / total) * 100;
+              const percentage = total > 0 ? (item.value / total) * 100 : 0;
               const angle = (percentage / 100) * 360;
               const startAngle = cumulativeAngle;
               cumulativeAngle += angle;
@@ -169,7 +333,7 @@ export default function AdminReports() {
               />
               <span className="text-slate-600 dark:text-slate-400">{item.label}</span>
               <span className="font-semibold text-slate-900 dark:text-white">
-                {((item.value / total) * 100).toFixed(1)}%
+                {total > 0 ? ((item.value / total) * 100).toFixed(1) : "0.0"}%
               </span>
             </div>
           ))}
@@ -201,7 +365,11 @@ export default function AdminReports() {
               <div>
                 <p className="text-sm text-slate-500 dark:text-slate-400">{kpi.label}</p>
                 <p className="mt-1 text-2xl font-bold text-slate-900 dark:text-white">{kpi.value}</p>
-                <p className="mt-1 text-xs font-medium text-green-600 dark:text-green-400">{kpi.change}</p>
+                {kpi.change !== undefined && (
+                  <p className={`mt-1 text-xs font-medium ${kpi.change >= 0 ? "text-green-600 dark:text-green-400" : "text-red-600 dark:text-red-400"}`}>
+                    {formatVariation(kpi.change)} vs période précédente
+                  </p>
+                )}
               </div>
               <div className={`rounded-lg bg-slate-100 p-3 dark:bg-slate-800 ${kpi.color}`}>
                 <kpi.icon className="h-6 w-6" />
@@ -232,7 +400,7 @@ export default function AdminReports() {
           </div>
           <div className="flex flex-wrap items-center gap-3">
             <div className="flex gap-2">
-              {(["week", "month", "year"] as ReportPeriod[]).map((p) => (
+              {((["week", "month", "year"] as ReportPeriod[])).map((p) => (
                 <button
                   key={p}
                   onClick={() => setPeriod(p)}
@@ -243,7 +411,7 @@ export default function AdminReports() {
                       : "bg-slate-100 text-slate-600 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700"
                   )}
                 >
-                  {p === "week" ? "Semaine" : p === "month" ? "Mois" : "Année"}
+                  {p === "week" ? "7 derniers jours" : p === "month" ? "30 derniers jours" : "12 derniers mois"}
                 </button>
               ))}
             </div>
@@ -273,7 +441,7 @@ export default function AdminReports() {
             <div>
               <h2 className="text-lg font-semibold text-slate-900 dark:text-white">Répartition</h2>
               <p className="text-sm text-slate-500 dark:text-slate-400">
-                {reportType === "revenue" ? "Par méthode de paiement" : reportType === "subscriptions" ? "Par statut" : "Par statut"}
+                {reportType === "revenue" ? "Par méthode de paiement" : reportType === "subscriptions" ? "Par statut (dynamique)" : reportType === "users" ? "Par rôle (Abonné / Entraîneur / Gestionnaire)" : "Par statut"}
               </p>
             </div>
             <BarChart3 className="h-5 w-5 text-slate-400" />
@@ -286,7 +454,7 @@ export default function AdminReports() {
             <div>
               <h2 className="text-lg font-semibold text-slate-900 dark:text-white">Proportions</h2>
               <p className="text-sm text-slate-500 dark:text-slate-400">
-                {reportType === "revenue" ? "Répartition des revenus" : reportType === "subscriptions" ? "Répartition des abonnements" : "Répartition des réservations"}
+                {reportType === "revenue" ? "Répartition des revenus" : reportType === "subscriptions" ? "Répartition des abonnements" : reportType === "users" ? "Répartition des utilisateurs par statut" : "Répartition des réservations"}
               </p>
             </div>
             <PieChart className="h-5 w-5 text-slate-400" />
@@ -299,7 +467,7 @@ export default function AdminReports() {
       <Card className="p-6">
         <div className="flex items-center justify-between">
           <h2 className="text-lg font-semibold text-slate-900 dark:text-white">Résumé détaillé</h2>
-          <Badge variant="default">{period === "week" ? "Cette semaine" : period === "month" ? "Ce mois" : "Cette année"}</Badge>
+          <Badge variant="default">{hasCustomRange ? `${dateFrom || "…"} → ${dateTo || "… "}` : period === "week" ? "7 derniers jours" : period === "month" ? "30 derniers jours" : "12 derniers mois"}</Badge>
         </div>
         <div className="mt-4 overflow-x-auto">
           <table className="w-full text-sm">
@@ -315,19 +483,19 @@ export default function AdminReports() {
               <tr>
                 <td className="py-3 pr-4 text-slate-900 dark:text-white">Revenu total</td>
                 <td className="py-3 pr-4 font-semibold text-slate-900 dark:text-white">{totalRevenue} USD</td>
-                <td className="py-3 pr-4 text-green-600 dark:text-green-400">↑ 12.5%</td>
+                <td className="py-3 pr-4 text-green-600 dark:text-green-400">{formatVariation(revenueChange)}</td>
                 <td className="py-3"><Badge variant="success">Excellent</Badge></td>
               </tr>
               <tr>
                 <td className="py-3 pr-4 text-slate-900 dark:text-white">Abonnements actifs</td>
                 <td className="py-3 pr-4 font-semibold text-slate-900 dark:text-white">{activeSubscriptions}</td>
-                <td className="py-3 pr-4 text-green-600 dark:text-green-400">↑ 8.2%</td>
+                <td className="py-3 pr-4 text-green-600 dark:text-green-400">{formatVariation(activeSubsChange)}</td>
                 <td className="py-3"><Badge variant="success">Bon</Badge></td>
               </tr>
               <tr>
                 <td className="py-3 pr-4 text-slate-900 dark:text-white">Abonnements en attente</td>
                 <td className="py-3 pr-4 font-semibold text-slate-900 dark:text-white">{pendingSubscriptions}</td>
-                <td className="py-3 pr-4 text-amber-600 dark:text-amber-400">→ Stable</td>
+                <td className="py-3 pr-4 text-amber-600 dark:text-amber-400">{formatVariation(pendingChange)}</td>
                 <td className="py-3"><Badge variant="warning">À surveiller</Badge></td>
               </tr>
               <tr>
@@ -339,13 +507,7 @@ export default function AdminReports() {
               <tr>
                 <td className="py-3 pr-4 text-slate-900 dark:text-white">Réservations confirmées</td>
                 <td className="py-3 pr-4 font-semibold text-slate-900 dark:text-white">{confirmedReservations}</td>
-                <td className="py-3 pr-4 text-green-600 dark:text-green-400">↑ 15.3%</td>
-                <td className="py-3"><Badge variant="success">Excellent</Badge></td>
-              </tr>
-              <tr>
-                <td className="py-3 pr-4 text-slate-900 dark:text-white">Taux de rétention</td>
-                <td className="py-3 pr-4 font-semibold text-slate-900 dark:text-white">87.2%</td>
-                <td className="py-3 pr-4 text-green-600 dark:text-green-400">↑ 4.1%</td>
+                <td className="py-3 pr-4 text-green-600 dark:text-green-400">{formatVariation(confirmedChange)}</td>
                 <td className="py-3"><Badge variant="success">Excellent</Badge></td>
               </tr>
             </tbody>

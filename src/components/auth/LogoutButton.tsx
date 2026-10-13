@@ -22,11 +22,13 @@ export function LogoutButton({ variant = "sidebar", className, onDone }: LogoutB
   const { logout } = useAuth();
   const [leaving, setLeaving] = useState(false);
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
     if (leaving) return;
     setLeaving(true);
     try {
-      logout();
+      // Attendu : invalide le cookie de session côté serveur AVANT de naviguer,
+      // sinon la requête est annulée et la session survit.
+      await logout();
     } catch {
       // ignore
     }

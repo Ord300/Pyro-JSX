@@ -6,12 +6,14 @@ import {
   getStats,
   updateStats,
   replaceTimeSlots,
+  replaceGallery,
 } from "@/src/lib/dbRegistry";
 import { sendMail } from "@/src/lib/mailer";
 import { prisma } from "@/src/lib/prisma";
 
 function adminEmail(): string {
-  return (process.env.ADMIN_EMAIL || process.env.SMTP_USER || "ordidimbi@gmail.com").trim();
+  // Aucune adresse personnelle en dur : sans ADMIN_EMAIL/SMTP_USER configuré, pas d'alerte admin.
+  return (process.env.ADMIN_EMAIL || process.env.SMTP_USER || "").trim();
 }
 
 export async function GET(_request: NextRequest, { params }: { params: Promise<{ resource: string }> }) {
@@ -60,17 +62,25 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
       const now = new Date().toISOString();
       // 1) E-mail de confirmation au demandeur (avec logs serveur visibles dans le terminal)
       if (requesterEmail.includes("@")) {
-        sendMail({ to: requesterEmail, action: "demande_created", data: payload })
-          .then((r) => {
-            if (!r.sent) console.error("[DEMANDE] e-mail demandeur ÉCHEC:", r.error);
-          })
-          .catch((e) => console.error("[DEMANDE] e-mail demandeur ERREUR:", e?.message || e));
+        let mailSent = false;
+        try {
+          const r = await sendMail({ to: requesterEmail, action: "demande_created", data: payload });
+          mailSent = r.sent && !r.simulated;
+          if (!r.sent) console.error("[DEMANDE] e-mail demandeur ÉCHEC:", r.error);
+          else if (r.simulated) console.log("[DEMANDE] e-mail demandeur SIMULÉ (SMTP non configuré).");
+        } catch (e: any) {
+          console.error("[DEMANDE] e-mail demandeur ERREUR:", e?.message || e);
+        }
+        // Message honnête : on ne prétend l'e-mail que s'il est vraiment parti.
+        const confirmMsg = mailSent
+          ? `Votre Inscription ${payload.activityName ? `« ${payload.activityName} »` : ""} ${payload.planName ? `(${payload.planName})` : ""} a été envoyée. Un e-mail de confirmation vous a été adressé.`.trim()
+          : `Votre Inscription ${payload.activityName ? `« ${payload.activityName} »` : ""} ${payload.planName ? `(${payload.planName})` : ""} a été envoyée et enregistrée. (Envoi e-mail non configuré : suivi disponible dans vos notifications.)`.trim();
         prisma.notification
           .create({
             data: {
               userEmail: requesterEmail.toLowerCase(),
               title: "Demande envoyée",
-              message: `Votre Inscription ${payload.activityName ? `« ${payload.activityName} »` : ""} ${payload.planName ? `(${payload.planName})` : ""} a été envoyée. Un e-mail de confirmation vous a été adressé.`.trim(),
+              message: confirmMsg,
               type: "info",
               audience: "Suivi de demande",
               createdAt: now,
@@ -81,7 +91,8 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
       } else {
         console.error("[DEMANDE] pas d'e-mail demandeur — adresse manquante:", JSON.stringify((created as any)?.email));
       }
-      // 2) Alerte admin
+      // 2) Alerte admin (seulement si configuré)
+      if (admin.includes("@")) {
       sendMail({ to: admin, action: "nouvelle_demande_admin", data: payload })
         .then((r) => {
           if (!r.sent) console.error("[DEMANDE] e-mail admin ÉCHEC:", r.error);
@@ -100,6 +111,9 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
           },
         })
         .catch(() => {});
+      } else {
+        console.error("[DEMANDE] alerte admin ignorée : ADMIN_EMAIL/SMTP_USER non configuré.");
+      }
     }
     return NextResponse.json(created, { status: 201 });
   } catch (error: any) {
@@ -115,6 +129,10 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
     if (resource === "stats") return NextResponse.json(await updateStats(data));
     if (resource === "timeSlots") {
       await replaceTimeSlots(Array.isArray(data) ? data : []);
+      return NextResponse.json({ ok: true });
+    }
+    if (resource === "gallery") {
+      await replaceGallery(Array.isArray(data) ? data : []);
       return NextResponse.json({ ok: true });
     }
     return NextResponse.json({ error: "Ressource non remplaçable" }, { status: 405 });

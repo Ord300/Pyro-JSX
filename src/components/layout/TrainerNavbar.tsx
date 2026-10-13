@@ -24,8 +24,8 @@ export function TrainerNavbar({ onMenuClick }: { onMenuClick: () => void }) {
     return usersDB.subscribe(loadUser);
   }, [loadUser]);
 
-  const handleLogout = () => {
-    logout();
+  const handleLogout = async () => {
+    await logout().catch(() => {});
     router.push("/login");
   };
 

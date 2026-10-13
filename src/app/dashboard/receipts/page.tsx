@@ -6,6 +6,7 @@ import { Badge } from "@/src/components/ui/Badge";
 import { Button } from "@/src/components/ui/Button";
 import { cn } from "@/src/utils/cn";
 import { receiptsDB } from "@/src/services/dbService";
+import { downloadReceipt, printReceipt } from "@/src/services/receiptService";
 import type { Receipt } from "@/src/types/receipt";
 import { FileText, Download, Search, X, Printer } from "lucide-react";
 
@@ -27,7 +28,7 @@ export default function UserReceipts() {
 
   const filteredReceipts = receipts.filter((receipt) => {
     if (typeFilter !== "all" && receipt.type !== typeFilter) return false;
-    if (search && !receipt.reference.toLowerCase().includes(search.toLowerCase()) && !receipt.description.toLowerCase().includes(search.toLowerCase())) return false;
+    if (search && !`${receipt.reference ?? ""} ${receipt.description ?? ""}`.toLowerCase().includes(search.toLowerCase())) return false;
     return true;
   });
 
@@ -41,11 +42,11 @@ export default function UserReceipts() {
   };
 
   const handleDownload = (receipt: Receipt) => {
-    console.log("Téléchargement du reçu:", receipt.reference);
+    downloadReceipt(receipt);
   };
 
   const handlePrint = (receipt: Receipt) => {
-    console.log("Impression du reçu:", receipt.reference);
+    printReceipt(receipt);
   };
 
   return (
@@ -132,7 +133,7 @@ export default function UserReceipts() {
               </Button>
               <Button variant="outline" size="sm" className="flex-1" onClick={() => handleDownload(receipt)}>
                 <Download className="mr-2 h-4 w-4" />
-                PDF
+                Télécharger
               </Button>
             </div>
           </Card>
@@ -190,7 +191,7 @@ export default function UserReceipts() {
               <div className="rounded-lg border border-slate-200 p-4 dark:border-slate-700">
                 <h3 className="text-sm font-semibold text-slate-900 dark:text-white">Détails</h3>
                 <div className="mt-3 space-y-2">
-                  {selectedReceipt.items.map((item, index) => (
+                  {(selectedReceipt.items ?? []).map((item, index) => (
                     <div key={index} className="flex items-center justify-between text-sm">
                       <div>
                         <p className="text-slate-900 dark:text-white">{item.label}</p>
@@ -216,7 +217,7 @@ export default function UserReceipts() {
               <div className="flex gap-2">
                 <Button className="flex-1" onClick={() => handleDownload(selectedReceipt)}>
                   <Download className="mr-2 h-4 w-4" />
-                  Télécharger PDF
+                  Télécharger
                 </Button>
                 <Button variant="outline" className="flex-1" onClick={() => handlePrint(selectedReceipt)}>
                   <Printer className="mr-2 h-4 w-4" />

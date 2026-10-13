@@ -1,11 +1,19 @@
 "use client";
 
+import { useEffect } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { trainersService } from "@/src/services/trainersService";
+import { db } from "@/src/services/dbService";
 import type { Trainer } from "@/src/data/mockData";
 import { useToast } from "@/src/contexts/ToastContext";
 
 export function useTrainers() {
+  const qc = useQueryClient();
+  useEffect(() => {
+    return db.subscribe(() => {
+      qc.invalidateQueries({ queryKey: ["trainers"] });
+    });
+  }, [qc]);
   return useQuery<Trainer[]>({
     queryKey: ["trainers"],
     queryFn: () => trainersService.getAll(),
@@ -22,11 +30,11 @@ export function useCreateTrainer() {
     onMutate: async (newItem) => {
       await qc.cancelQueries({ queryKey: ["trainers"] });
       const previous = qc.getQueryData<Trainer[]>(["trainers"]);
-      qc.setQueryData<Trainer[]>(["trainers"], (old) => old ? [{ id: Math.max(0, ...old.map((i) => i.id)) + 1, ...newItem } as Trainer, ...old] : []);
+      qc.setQueryData<Trainer[]>(["trainers"], (old) => [{ id: -Date.now(), ...newItem } as Trainer, ...(old ?? [])]);
       return { previous };
     },
     onError: (_err, _new, context: any) => { if (context?.previous) qc.setQueryData(["trainers"], context.previous); addToast("Erreur création entraîneur", "error"); },
-    onSuccess: () => addToast("Entraîneur créé", "success"),
+    onSuccess: () => { addToast("Entraîneur créé", "success"); db.notifyChange("trainers"); },
     onSettled: () => qc.invalidateQueries({ queryKey: ["trainers"] })
   });
 }
@@ -45,7 +53,7 @@ export function useUpdateTrainer() {
       return { previous };
     },
     onError: (_err, _vars, context: any) => { if (context?.previous) qc.setQueryData(["trainers"], context.previous); addToast("Erreur mise à jour entraîneur", "error"); },
-    onSuccess: () => addToast("Entraîneur mis à jour", "success"),
+    onSuccess: () => { addToast("Entraîneur mis à jour", "success"); db.notifyChange("trainers"); },
     onSettled: () => qc.invalidateQueries({ queryKey: ["trainers"] })
   });
 }
@@ -64,7 +72,7 @@ export function useDeleteTrainer() {
       return { previous };
     },
     onError: (_err, _id, context: any) => { if (context?.previous) qc.setQueryData(["trainers"], context.previous); addToast("Erreur suppression entraîneur", "error"); },
-    onSuccess: () => addToast("Entraîneur supprimé", "success"),
+    onSuccess: () => { addToast("Entraîneur supprimé", "success"); db.notifyChange("trainers"); },
     onSettled: () => qc.invalidateQueries({ queryKey: ["trainers"] })
   });
 }

@@ -1,11 +1,19 @@
 "use client";
 
+import { useEffect } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { subscriptionsService } from "@/src/services/subscriptionsService";
+import { db } from "@/src/services/dbService";
 import type { Subscription } from "@/src/types/subscription";
 import { useToast } from "@/src/contexts/ToastContext";
 
 export function useSubscriptions() {
+  const qc = useQueryClient();
+  useEffect(() => {
+    return db.subscribe(() => {
+      qc.invalidateQueries({ queryKey: ["subscriptions"] });
+    });
+  }, [qc]);
   return useQuery<Subscription[]>({
     queryKey: ["subscriptions"],
     queryFn: () => subscriptionsService.getAll(),
@@ -20,11 +28,11 @@ export function useCreateSubscription() {
     onMutate: async (newSub) => {
       await qc.cancelQueries({ queryKey: ["subscriptions"] });
       const previous = qc.getQueryData<Subscription[]>(["subscriptions"]);
-      qc.setQueryData<Subscription[]>(["subscriptions"], (old) => old ? [{ id: Math.max(0, ...old.map((i) => i.id)) + 1, ...newSub } as Subscription, ...old] : []);
+      qc.setQueryData<Subscription[]>(["subscriptions"], (old) => [{ id: -Date.now(), ...newSub } as Subscription, ...(old ?? [])]);
       return { previous };
     },
     onError: (_err, _new, context: any) => { if (context?.previous) qc.setQueryData(["subscriptions"], context.previous); addToast("Erreur création abonnement", "error"); },
-    onSuccess: () => addToast("Abonnement créé", "success"),
+    onSuccess: () => { addToast("Abonnement créé", "success"); db.notifyChange("subscriptions"); },
     onSettled: () => qc.invalidateQueries({ queryKey: ["subscriptions"] })
   });
 }
@@ -41,7 +49,7 @@ export function useUpdateSubscription() {
       return { previous };
     },
     onError: (_err, _vars, context: any) => { if (context?.previous) qc.setQueryData(["subscriptions"], context.previous); addToast("Erreur mise à jour abonnement", "error"); },
-    onSuccess: () => addToast("Abonnement mis à jour", "success"),
+    onSuccess: () => { addToast("Abonnement mis à jour", "success"); db.notifyChange("subscriptions"); },
     onSettled: () => qc.invalidateQueries({ queryKey: ["subscriptions"] })
   });
 }
@@ -58,7 +66,7 @@ export function useDeleteSubscription() {
       return { previous };
     },
     onError: (_err, _id, context: any) => { if (context?.previous) qc.setQueryData(["subscriptions"], context.previous); addToast("Erreur suppression abonnement", "error"); },
-    onSuccess: () => addToast("Abonnement supprimé", "success"),
+    onSuccess: () => { addToast("Abonnement supprimé", "success"); db.notifyChange("subscriptions"); },
     onSettled: () => qc.invalidateQueries({ queryKey: ["subscriptions"] })
   });
 }

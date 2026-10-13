@@ -31,6 +31,7 @@ import { Input } from "@/src/components/ui/Input";
 import { Modal } from "@/src/components/ui/Modal";
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/src/components/ui/Table";
 import { performancesDB, goalsDB } from "@/src/services/dbService";
+import { confirmAction } from "@/src/components/ui/confirm";
 import { loadTrainerContext, type TrainerContext } from "@/src/services/trainerSpace";
 import { useToast } from "@/src/contexts/ToastContext";
 import { notifyImportantAction } from "@/src/services/notifyService";
@@ -61,7 +62,25 @@ const goalProgress = (g: any) => {
   if (g.targetValue == null || Number(g.targetValue) === 0) {
     return Math.min(100, Math.max(0, Number(g.currentValue) || 0));
   }
-  return Math.min(100, Math.max(0, ((Number(g.currentValue) || 0) / Number(g.targetValue)) * 100));
+  const direction = g.direction ?? "increase";
+  const current = Number(g.currentValue) || 0;
+  const target = Number(g.targetValue);
+  if (direction === "decrease") {
+    if (target > 0 && current > 0) {
+      return Math.min(100, (target / current) * 100);
+    }
+    return 0;
+  }
+  return Math.min(100, Math.max(0, (current / target) * 100));
+};
+
+const isGoalReached = (g: any, current: number) => {
+  if (g.targetValue == null) return false;
+  const target = Number(g.targetValue);
+  if (Number.isNaN(target)) return false;
+  const direction = g.direction ?? "increase";
+  if (direction === "decrease") return current <= target;
+  return current >= target;
 };
 
 export default function TrainerPerformance() {
@@ -89,7 +108,7 @@ export default function TrainerPerformance() {
   const [savingPerf, setSavingPerf] = useState(false);
   // Modals — objectif
   const [goalModal, setGoalModal] = useState(false);
-  const [goalForm, setGoalForm] = useState({ email: "", title: "", description: "", targetValue: "", unit: "kg", deadline: "", activityName: "" });
+  const [goalForm, setGoalForm] = useState({ email: "", title: "", description: "", targetValue: "", unit: "kg", deadline: "", activityName: "", direction: "increase" });
   const [savingGoal, setSavingGoal] = useState(false);
   // Mise à jour progression objectif
   const [progressTarget, setProgressTarget] = useState<any | null>(null);
@@ -121,8 +140,18 @@ export default function TrainerPerformance() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const subscribers = useMemo(() => {
+  // Abonnés dédupliqués par e-mail (un même e-mail peut avoir plusieurs abonnements).
+  const uniqueSubs = useMemo(() => {
     if (!ctx) return [];
+    const map = new Map<string, any>();
+    ctx.mySubscriptions.forEach((s: any) => {
+      const key = String(s.email ?? s.userName).toLowerCase();
+      if (!map.has(key)) map.set(key, s);
+    });
+    return [...map.values()];
+  }, [ctx]);
+
+  const subscribers = useMemo(() => {    if (!ctx) return [];
     const map = new Map<string, any>();
     ctx.mySubscriptions.forEach((s: any) => {
       const key = String(s.email ?? s.userName).toLowerCase();
@@ -200,6 +229,10 @@ export default function TrainerPerformance() {
   };
 
   const savePerformance = async () => {
+    if (String(perfForm.value ?? "").trim() === "") {
+      toast.addToast("Saisissez une valeur de mesure", "error");
+      return;
+    }
     const val = Number(String(perfForm.value).replace(",", "."));
     if (!perfForm.email || !perfForm.metric || Number.isNaN(val)) {
       toast.addToast("Sélectionnez un sportif, une mesure et une valeur valide", "error");
@@ -242,15 +275,19 @@ export default function TrainerPerformance() {
   };
 
   const deletePerformance = async (id: number) => {
-    if (!confirm("Supprimer cette mesure ?")) return;
-    await performancesDB.delete(id);
-    await reload();
-    toast.addToast("Mesure supprimée", "success");
+    if (!(await confirmAction({ title: "Supprimer la mesure", message: "Supprimer cette mesure ?", confirmLabel: "Supprimer" }))) return;
+    try {
+      await performancesDB.delete(id);
+      await reload();
+      toast.addToast("Mesure supprimée", "success");
+    } catch {
+      toast.addToast("Suppression impossible", "error");
+    }
   };
 
   const openGoalModal = () => {
     const sub = ctx?.mySubscriptions.find((s: any) => String(s.email).toLowerCase() === String(selectedEmail).toLowerCase());
-    setGoalForm({ email: selectedEmail, title: "", description: "", targetValue: "", unit: "kg", deadline: "", activityName: sub?.activityName ?? ctx?.myActivityNames[0] ?? "" });
+    setGoalForm({ email: selectedEmail, title: "", description: "", targetValue: "", unit: "kg", deadline: "", activityName: sub?.activityName ?? ctx?.myActivityNames[0] ?? "", direction: "increase" });
     setGoalModal(true);
   };
 
@@ -274,6 +311,7 @@ export default function TrainerPerformance() {
         unit: goalForm.unit,
         deadline: goalForm.deadline || null,
         status: "En cours",
+        direction: (goalForm as any).direction ?? "increase",
         markedBy: ctx?.trainer?.name ?? ctx?.user?.name ?? "",
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
@@ -299,33 +337,49 @@ export default function TrainerPerformance() {
 
   const saveProgress = async () => {
     if (!progressTarget) return;
+    if (String(progressValue ?? "").trim() === "") {
+      toast.addToast("Saisissez une valeur de progression", "error");
+      return;
+    }
     const val = Number(String(progressValue).replace(",", "."));
     if (Number.isNaN(val)) {
       toast.addToast("Valeur invalide", "error");
       return;
     }
-    const reached = progressTarget.targetValue != null && val >= Number(progressTarget.targetValue);
-    await goalsDB.update(progressTarget.id, {
-      currentValue: val,
-      status: reached ? "Atteint" : progressTarget.status === "Atteint" ? "En cours" : progressTarget.status,
-      updatedAt: new Date().toISOString(),
-    });
-    setProgressTarget(null);
-    await reload();
-    toast.addToast(reached ? "Objectif atteint ! Bravo." : "Progression mise à jour", "success");
+    try {
+      const reached = progressTarget.targetValue != null && isGoalReached(progressTarget, val);
+      await goalsDB.update(progressTarget.id, {
+        currentValue: val,
+        status: reached ? "Atteint" : progressTarget.status === "Atteint" ? "En cours" : progressTarget.status,
+        updatedAt: new Date().toISOString(),
+      });
+      setProgressTarget(null);
+      await reload();
+      toast.addToast(reached ? "Objectif atteint ! Bravo." : "Progression mise à jour", "success");
+    } catch {
+      toast.addToast("Mise à jour impossible", "error");
+    }
   };
 
   const changeGoalStatus = async (g: any, status: string) => {
-    await goalsDB.update(g.id, { status, updatedAt: new Date().toISOString() });
-    await reload();
-    toast.addToast(`Objectif « ${status} »`, "success");
+    try {
+      await goalsDB.update(g.id, { status, updatedAt: new Date().toISOString() });
+      await reload();
+      toast.addToast(`Objectif « ${status} »`, "success");
+    } catch {
+      toast.addToast("Mise à jour impossible", "error");
+    }
   };
 
   const deleteGoal = async (id: number) => {
-    if (!confirm("Supprimer cet objectif ?")) return;
-    await goalsDB.delete(id);
-    await reload();
-    toast.addToast("Objectif supprimé", "success");
+    if (!(await confirmAction({ title: "Supprimer l'objectif", message: "Supprimer cet objectif ?", confirmLabel: "Supprimer" }))) return;
+    try {
+      await goalsDB.delete(id);
+      await reload();
+      toast.addToast("Objectif supprimé", "success");
+    } catch {
+      toast.addToast("Suppression impossible", "error");
+    }
   };
 
   if (!ctx) return <p className="text-sm text-slate-500">Chargement…</p>;
@@ -520,6 +574,9 @@ export default function TrainerPerformance() {
                             {g.currentValue}{g.unit ? ` ${g.unit}` : ""}{g.targetValue != null ? ` / ${g.targetValue}${g.unit ? ` ${g.unit}` : ""}` : ""} · {g.activityName}
                             {g.deadline ? ` · Échéance : ${g.deadline}` : ""}
                           </p>
+                          <p className="mt-0.5 text-xs text-slate-400">
+                            Sens : {(g.direction ?? "increase") === "decrease" ? "Réduire" : "Augmenter"}
+                          </p>
                           {g.description && <p className="mt-1 text-xs text-slate-500">{g.description}</p>}
                         </div>
                         <Badge variant={g.status === "Atteint" ? "success" : g.status === "Abandonné" ? "danger" : "warning"}>{g.status}</Badge>
@@ -613,7 +670,7 @@ export default function TrainerPerformance() {
           <div>
             <label className="mb-1 block text-sm font-medium">Sportif</label>
             <select value={perfForm.email} onChange={(e) => setPerfForm({ ...perfForm, email: e.target.value })} className="w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-900 shadow-sm focus:border-sky-500 focus:outline-none focus:ring-2 focus:ring-sky-500 dark:border-slate-600 dark:bg-slate-800 dark:text-white [&>option]:bg-white [&>option]:text-slate-900 dark:[&>option]:bg-slate-800 dark:[&>option]:text-white">
-              {ctx.mySubscriptions.map((s: any) => <option key={s.id} value={s.email}>{s.userName} — {s.activityName}</option>)}
+              {uniqueSubs.map((s: any) => <option key={s.id} value={s.email}>{s.userName} — {s.activityName}</option>)}
             </select>
           </div>
           <div className="grid grid-cols-2 gap-3">
@@ -649,7 +706,7 @@ export default function TrainerPerformance() {
           <div>
             <label className="mb-1 block text-sm font-medium">Sportif</label>
             <select value={goalForm.email} onChange={(e) => setGoalForm({ ...goalForm, email: e.target.value })} className="w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-900 shadow-sm focus:border-sky-500 focus:outline-none focus:ring-2 focus:ring-sky-500 dark:border-slate-600 dark:bg-slate-800 dark:text-white [&>option]:bg-white [&>option]:text-slate-900 dark:[&>option]:bg-slate-800 dark:[&>option]:text-white">
-              {ctx.mySubscriptions.map((s: any) => <option key={s.id} value={s.email}>{s.userName} — {s.activityName}</option>)}
+              {uniqueSubs.map((s: any) => <option key={s.id} value={s.email}>{s.userName} — {s.activityName}</option>)}
             </select>
           </div>
           <div>
@@ -678,6 +735,13 @@ export default function TrainerPerformance() {
             <label className="mb-1 block text-sm font-medium">Activité</label>
             <select value={goalForm.activityName} onChange={(e) => setGoalForm({ ...goalForm, activityName: e.target.value })} className="w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-900 shadow-sm focus:border-sky-500 focus:outline-none focus:ring-2 focus:ring-sky-500 dark:border-slate-600 dark:bg-slate-800 dark:text-white [&>option]:bg-white [&>option]:text-slate-900 dark:[&>option]:bg-slate-800 dark:[&>option]:text-white">
               {ctx.myActivityNames.map((n) => <option key={n}>{n}</option>)}
+            </select>
+          </div>
+          <div>
+            <label className="mb-1 block text-sm font-medium">Sens</label>
+            <select value={(goalForm as any).direction ?? "increase"} onChange={(e) => setGoalForm({ ...goalForm, direction: e.target.value })} className="w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-900 shadow-sm focus:border-sky-500 focus:outline-none focus:ring-2 focus:ring-sky-500 dark:border-slate-600 dark:bg-slate-800 dark:text-white [&>option]:bg-white [&>option]:text-slate-900 dark:[&>option]:bg-slate-800 dark:[&>option]:text-white">
+              <option value="increase">Augmenter</option>
+              <option value="decrease">Réduire</option>
             </select>
           </div>
           <div className="flex gap-3">

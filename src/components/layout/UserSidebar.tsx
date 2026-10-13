@@ -12,6 +12,7 @@ import {
   FileText
 } from "lucide-react";
 import { cn } from "@/src/utils/cn";
+import { LogoutButton } from "@/src/components/auth/LogoutButton";
 
 const menuItems = [
   { name: "Dashboard", path: "/dashboard", icon: LayoutDashboard },
@@ -77,7 +78,8 @@ export function UserSidebar({ isOpen, setIsOpen }: { isOpen: boolean; setIsOpen:
           </ul>
         </div>
 
-        <div className="px-3 pb-6">
+        <div className="px-3 pb-6 space-y-3">
+          <LogoutButton variant="sidebar" onDone={() => setIsOpen(false)} />
           <div className="rounded-xl border border-emerald-700/30 bg-emerald-500/10 p-4">
             <p className="text-[11px] font-medium text-emerald-200/80">Besoin d'aide ?</p>
             <p className="mt-1 text-[11px] leading-relaxed text-emerald-300/60">Contactez l'administration du centre sportif.</p>

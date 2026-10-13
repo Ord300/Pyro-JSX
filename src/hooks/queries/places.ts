@@ -1,11 +1,19 @@
 "use client";
 
+import { useEffect } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { placesService } from "@/src/services/placesService";
+import { db } from "@/src/services/dbService";
 import type { Place } from "@/src/data/mockData";
 import { useToast } from "@/src/contexts/ToastContext";
 
 export function usePlaces() {
+  const qc = useQueryClient();
+  useEffect(() => {
+    return db.subscribe(() => {
+      qc.invalidateQueries({ queryKey: ["places"] });
+    });
+  }, [qc]);
   return useQuery<Place[]>({
     queryKey: ["places"],
     queryFn: () => placesService.getAll(),
@@ -22,11 +30,11 @@ export function useCreatePlace() {
     onMutate: async (newItem) => {
       await qc.cancelQueries({ queryKey: ["places"] });
       const previous = qc.getQueryData<Place[]>(["places"]);
-      qc.setQueryData<Place[]>(["places"], (old) => old ? [{ id: Math.max(0, ...old.map((i) => i.id)) + 1, ...newItem } as Place, ...old] : []);
+      qc.setQueryData<Place[]>(["places"], (old) => [{ id: -Date.now(), ...newItem } as Place, ...(old ?? [])]);
       return { previous };
     },
     onError: (_err, _new, context: any) => { if (context?.previous) qc.setQueryData(["places"], context.previous); addToast("Erreur création lieu", "error"); },
-    onSuccess: () => addToast("Lieu créé", "success"),
+    onSuccess: () => { addToast("Lieu créé", "success"); db.notifyChange("places"); },
     onSettled: () => qc.invalidateQueries({ queryKey: ["places"] })
   });
 }
@@ -45,7 +53,7 @@ export function useUpdatePlace() {
       return { previous };
     },
     onError: (_err, _vars, context: any) => { if (context?.previous) qc.setQueryData(["places"], context.previous); addToast("Erreur mise à jour lieu", "error"); },
-    onSuccess: () => addToast("Lieu mis à jour", "success"),
+    onSuccess: () => { addToast("Lieu mis à jour", "success"); db.notifyChange("places"); },
     onSettled: () => qc.invalidateQueries({ queryKey: ["places"] })
   });
 }
@@ -64,7 +72,7 @@ export function useDeletePlace() {
       return { previous };
     },
     onError: (_err, _id, context: any) => { if (context?.previous) qc.setQueryData(["places"], context.previous); addToast("Erreur suppression lieu", "error"); },
-    onSuccess: () => addToast("Lieu supprimé", "success"),
+    onSuccess: () => { addToast("Lieu supprimé", "success"); db.notifyChange("places"); },
     onSettled: () => qc.invalidateQueries({ queryKey: ["places"] })
   });
 }

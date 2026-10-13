@@ -1,8 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { redirect } from "next/navigation";
-import { usersDB } from "@/src/services/dbService";
+import { useRouter } from "next/navigation";
+import { useAuth } from "@/src/contexts/AuthContext";
 import { UserSidebar } from "@/src/components/layout/UserSidebar";
 import { UserNavbar } from "@/src/components/layout/UserNavbar";
 
@@ -12,35 +12,23 @@ export default function UserLayout({
   children: React.ReactNode;
 }) {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
-  const [user, setUser] = useState<any | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const { user, isLoading } = useAuth();
+  const router = useRouter();
 
   useEffect(() => {
-    const load = async () => {
-      const email = localStorage.getItem("current_user_email");
-      if (email) {
-        const users = await usersDB.getAll<any>();
-        const found = users.find((item) => item.email.toLowerCase() === email);
-        setUser(found || null);
-      }
-      setIsLoading(false);
-    };
-    load();
-  }, []);
+    if (isLoading) return;
+    if (!user) {
+      router.replace("/login");
+    } else if (user.mustChangePassword) {
+      router.replace("/change-password");
+    } else if (user.role === "Entraîneur") {
+      router.replace("/trainer");
+    } else if (user.role === "Gestionnaire") {
+      router.replace("/admin");
+    }
+  }, [isLoading, user, router]);
 
-  useEffect(() => {
-    if (!isLoading && !user) {
-      redirect("/login");
-    }
-    if (!isLoading && user?.mustChangePassword) {
-      redirect("/change-password");
-    }
-    if (!isLoading && user?.role === "Entraîneur") {
-      redirect("/trainer");
-    }
-  }, [isLoading, user]);
-
-  if (isLoading) {
+  if (isLoading || !user) {
     return (
       <div className="flex h-screen items-center justify-center bg-emerald-950">
         <div className="flex flex-col items-center gap-3">

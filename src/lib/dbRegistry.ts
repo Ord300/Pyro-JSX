@@ -1,4 +1,5 @@
 import { prisma } from "@/src/lib/prisma";
+import { hashPassword, isHashed } from "@/src/lib/password";
 import {
   mockActivities,
   mockTrainers,
@@ -100,13 +101,45 @@ export async function listRecords(resource: string): Promise<any[]> {
   return rows.map((row) => serializeOut(resource, row, config));
 }
 
+async function findUniqueFlexible(model: Delegate, id: string): Promise<any | null> {
+  // 1) D'abord l'id tel quel (string) — évite d'envoyer Number("1") à une colonne String.
+  try {
+    const row = await model.findUnique({ where: { id: id as any } });
+    if (row) return row;
+  } catch {
+    // Incompatibilité de type (ex. string vers colonne Int) : on tente la version numérique.
+  }
+  // 2) Version numérique seulement si c'est un nombre fini.
+  const num = Number(id);
+  if (Number.isFinite(num)) {
+    try {
+      const row = await model.findUnique({ where: { id: num as any } });
+      if (row) return row;
+    } catch {
+      // ignore
+    }
+  }
+  // 3) Dernier recours : findFirst (string puis numérique).
+  try {
+    const row = await model.findFirst({ where: { id: id as any } });
+    if (row) return row;
+  } catch {
+    // ignore
+  }
+  if (Number.isFinite(Number(id))) {
+    try {
+      return await model.findFirst({ where: { id: Number(id) as any } });
+    } catch {
+      return null;
+    }
+  }
+  return null;
+}
+
 export async function getRecord(resource: string, id: string): Promise<any | null> {
   const config = getResource(resource);
   if (!config) throw new Error(`Ressource inconnue: ${resource}`);
-  const where = Number.isNaN(Number(id)) ? id : Number(id);
-  const row =
-    (await config.model().findUnique({ where: { id: where } as any })) ??
-    (Number.isNaN(Number(id)) ? await config.model().findFirst({ where: { id } as any }) : null);
+  const row = await findUniqueFlexible(config.model(), id);
   return row ? serializeOut(resource, row, config) : null;
 }
 
@@ -115,6 +148,10 @@ export async function createRecord(resource: string, data: any): Promise<any> {
   if (!config) throw new Error(`Ressource inconnue: ${resource}`);
   const payload = serializeIn(data, config);
   delete payload.id;
+  // Sécurité : aucun mot de passe en clair en base (tous les chemins passent ici).
+  if (resource === "users" && typeof payload.password === "string" && payload.password && !isHashed(payload.password)) {
+    payload.password = await hashPassword(payload.password);
+  }
   try {
     const row = await config.model().create({ data: payload });
     return serializeOut(resource, row, config);
@@ -133,19 +170,23 @@ export async function createRecord(resource: string, data: any): Promise<any> {
 export async function updateRecord(resource: string, id: string, data: any): Promise<any | null> {
   const config = getResource(resource);
   if (!config) throw new Error(`Ressource inconnue: ${resource}`);
-  const where = Number.isNaN(Number(id)) ? id : Number(id);
-  const existing = await config.model().findUnique({ where: { id: where } as any });
+  const existing = await findUniqueFlexible(config.model(), id);
   if (!existing) return null;
+  const realId = (existing as any).id;
   const payload = serializeIn(data, config);
   delete payload.id;
+  // Sécurité : aucun mot de passe en clair en base.
+  if (resource === "users" && typeof payload.password === "string" && payload.password && !isHashed(payload.password)) {
+    payload.password = await hashPassword(payload.password);
+  }
   try {
-    const row = await config.model().update({ where: { id: where } as any, data: payload });
+    const row = await config.model().update({ where: { id: realId } as any, data: payload });
     return serializeOut(resource, row, config);
   } catch (e: any) {
     if (resource === "activities" && /Unknown argument `(minAge|maxAge)`/.test(e?.message ?? "")) {
       delete payload.minAge;
       delete payload.maxAge;
-      const row = await config.model().update({ where: { id: where } as any, data: payload });
+      const row = await config.model().update({ where: { id: realId } as any, data: payload });
       return serializeOut(resource, row, config);
     }
     throw e;
@@ -155,9 +196,26 @@ export async function updateRecord(resource: string, id: string, data: any): Pro
 export async function deleteRecord(resource: string, id: string): Promise<boolean> {
   const config = getResource(resource);
   if (!config) throw new Error(`Ressource inconnue: ${resource}`);
-  const where = Number.isNaN(Number(id)) ? id : Number(id);
+  // Essaie d'abord l'id tel quel (string), puis la version numérique si finie, puis findFirst.
   try {
-    await config.model().delete({ where: { id: where } as any });
+    await config.model().delete({ where: { id: id as any } });
+    return true;
+  } catch {
+    // ignore, tente la version numérique
+  }
+  const num = Number(id);
+  if (Number.isFinite(num)) {
+    try {
+      await config.model().delete({ where: { id: num as any } });
+      return true;
+    } catch {
+      // ignore, dernier recours ci-dessous
+    }
+  }
+  try {
+    const existing = await findUniqueFlexible(config.model(), id);
+    if (!existing) return false;
+    await config.model().delete({ where: { id: (existing as any).id } as any });
     return true;
   } catch {
     return false;
@@ -173,6 +231,22 @@ export async function replaceTimeSlots(items: any[]): Promise<void> {
         available: slot.available !== false,
         capacity: Number(slot.capacity) || 0,
         booked: Number(slot.booked) || 0,
+      })),
+    }),
+  ]);
+}
+
+export async function replaceGallery(items: any[]): Promise<void> {
+  await prisma.$transaction([
+    prisma.galleryImage.deleteMany(),
+    prisma.galleryImage.createMany({
+      data: items.map((g) => ({
+        title: String(g.title ?? "Sans titre"),
+        description: g.description != null ? String(g.description) : null,
+        image: String(g.image ?? ""),
+        alt: String(g.alt ?? g.title ?? ""),
+        order: Number(g.order) || 0,
+        visible: g.visible !== false,
       })),
     }),
   ]);
@@ -243,7 +317,7 @@ async function seedActivitiesAndContent() {
     data: {
       name: "Administrateur",
       email: "admin@gmail.com",
-      password: "password",
+      password: await hashPassword("password"),
       role: "Gestionnaire",
       status: "Actif",
     },
@@ -302,6 +376,7 @@ export async function resetDatabase(): Promise<void> {
     prisma.notification.deleteMany(),
     (prisma as any).performance.deleteMany(),
     (prisma as any).goal.deleteMany(),
+    prisma.attendance.deleteMany(),
     prisma.user.deleteMany(),
     prisma.stat.deleteMany(),
   ]);

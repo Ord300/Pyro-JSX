@@ -277,6 +277,7 @@ model Goal {
   unit         String  @default("")
   deadline     String?
   status       String  @default("En cours")
+  direction    String  @default("increase")
   markedBy     String  @default("")
   createdAt    String
   updatedAt    String?

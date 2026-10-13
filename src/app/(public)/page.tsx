@@ -2,11 +2,10 @@
 
 import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
-import { ArrowRight, Dumbbell, Star, ChevronDown, Sparkles } from "lucide-react";
+import { ArrowRight, Dumbbell, ChevronDown, Sparkles, Users, CalendarCheck, QrCode, TrendingUp } from "lucide-react";
 import { Button } from "@/src/components/ui/Button";
 import { Badge } from "@/src/components/ui/Badge";
 import { Card, CardContent } from "@/src/components/ui/Card";
-import { mockTestimonials } from "@/src/data/mockData";
 import { usersDB, placesDB } from "@/src/services/dbService";
 import { useActivities } from "@/src/hooks/queries/activities";
 import { useTrainers } from "@/src/hooks/queries/trainers";
@@ -27,16 +26,13 @@ function StatCard({ label, value, index }: { label: string; value: number; index
   );
 }
 
-// --- Composant Étoiles ---
-function Stars({ rating }: { rating: number }) {
-  return (
-    <div className="flex gap-0.5">
-      {[1, 2, 3, 4, 5].map((i) => (
-        <Star key={i} className={`h-4 w-4 ${i <= rating ? "fill-amber-400 text-amber-400" : "text-slate-300"}`} />
-      ))}
-    </div>
-  );
-}
+// --- Atouts du centre (contenus réels : fonctionnalités de la plateforme) ---
+const HIGHLIGHTS = [
+  { icon: Users, title: "Encadrement professionnel", text: "Des entraîneurs certifiés suivent vos progrès et vos objectifs, séance après séance." },
+  { icon: CalendarCheck, title: "Réservation en ligne", text: "Réservez vos séances et suivez vos présences depuis votre espace personnel." },
+  { icon: QrCode, title: "Carte d'abonné QR", text: "Votre carte virtuelle avec QR de connexion, vos reçus et votre historique au même endroit." },
+  { icon: TrendingUp, title: "Suivi des performances", text: "Mesures, courbes de progression et objectifs fixés avec votre coach." },
+];
 
 export default function Home() {
   const [activeTab, setActiveTab] = useState<"monthly" | "yearly">("monthly");
@@ -249,27 +245,21 @@ export default function Home() {
         </div>
       </section>
 
-      {/* ── TÉMOIGNAGES ── */}
+      {/* ── ATOUTS ── */}
       <section className="bg-slate-50 dark:bg-slate-950 py-20 px-6 lg:px-8">
         <div className="mx-auto max-w-6xl">
           <div className="text-center mb-10 reveal">
-            <Badge variant="default" className="mb-3 bg-primary-50 text-primary-700 dark:bg-primary-900/30 dark:text-primary-300">Témoignages</Badge>
-            <h2 className="text-4xl font-extrabold text-slate-900 dark:text-white">Ce que disent nos membres</h2>
+            <Badge variant="default" className="mb-3 bg-primary-50 text-primary-700 dark:bg-primary-900/30 dark:text-primary-300">Pourquoi nous</Badge>
+            <h2 className="text-4xl font-extrabold text-slate-900 dark:text-white">Un centre qui vous suit vraiment</h2>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
-            {mockTestimonials.map((t, index) => (
-              <Card key={t.id} className={`p-5 flex flex-col gap-3 border-slate-200 dark:border-slate-800 hover:shadow-md transition-shadow reveal ${index % 4 === 0 ? "delay-100" : index % 4 === 1 ? "delay-200" : index % 4 === 2 ? "delay-300" : "delay-400"}`}>
-                <Stars rating={t.rating} />
-                <p className="text-sm text-slate-600 dark:text-slate-300 italic leading-relaxed flex-1">"{t.comment}"</p>
-                <div className="flex items-center gap-3 pt-2 border-t border-slate-100 dark:border-slate-800">
-                  <div className="h-8 w-8 rounded-full bg-primary-100 dark:bg-primary-900/30 flex items-center justify-center text-sm font-bold text-primary-600 dark:text-primary-400">
-                    {t.avatar}
-                  </div>
-                  <div>
-                    <p className="text-sm font-semibold text-slate-900 dark:text-white">{t.name}</p>
-                    <p className="text-xs text-slate-400">{t.activity}</p>
-                  </div>
-                </div>
+            {HIGHLIGHTS.map((h, index) => (
+              <Card key={h.title} className={`p-5 flex flex-col gap-3 border-slate-200 dark:border-slate-800 hover:shadow-md transition-shadow reveal ${index % 4 === 0 ? "delay-100" : index % 4 === 1 ? "delay-200" : index % 4 === 2 ? "delay-300" : "delay-400"}`}>
+                <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-primary-50 dark:bg-primary-900/30">
+                  <h.icon className="h-5 w-5 text-primary-600 dark:text-primary-400" />
+                </span>
+                <p className="font-semibold text-slate-900 dark:text-white">{h.title}</p>
+                <p className="text-sm text-slate-600 dark:text-slate-300 leading-relaxed flex-1">{h.text}</p>
               </Card>
             ))}
           </div>
@@ -280,11 +270,11 @@ export default function Home() {
       <section className="bg-gradient-to-br from-primary-600 to-primary-800 py-20 px-6 lg:px-8 text-center">
         <div className="mx-auto max-w-3xl reveal-scale">
           <h2 className="text-4xl font-extrabold text-white">Prêt à commencer votre transformation ?</h2>
-          <p className="mt-4 text-primary-100 text-lg">Rejoignez plus de 500 membres qui font déjà confiance à notre centre.</p>
+          <p className="mt-4 text-primary-100 text-lg">Rejoignez{membersCount > 0 ? ` nos ${membersCount} membres` : " notre centre"} et progressez avec nos coachs.</p>
           <div className="mt-10 flex flex-col sm:flex-row gap-4 justify-center">
             <Link href="/register">
               <Button size="lg" className="bg-white text-primary-700 hover:bg-primary-50 font-semibold shadow-lg w-full sm:w-auto">
-                S'abonné maintenant
+                S'abonner maintenant
               </Button>
             </Link>
           </div>

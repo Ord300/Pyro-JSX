@@ -5,8 +5,8 @@ import { Card } from "@/src/components/ui/Card";
 import { Badge } from "@/src/components/ui/Badge";
 import { Button } from "@/src/components/ui/Button";
 import { Input } from "@/src/components/ui/Input";
-import { messagesDB, usersDB } from "@/src/services/dbService";
-import { notifyImportantAction } from "@/src/services/notifyService";
+import { messagesDB, notificationsDB, usersDB } from "@/src/services/dbService";
+import { sendImportantEmail } from "@/src/services/notifyService";
 import { cn } from "@/src/utils/cn";
 import { Headset, MessageSquare, Send, ShieldCheck } from "lucide-react";
 
@@ -44,6 +44,8 @@ export default function UserMessages() {
   const [sending, setSending] = useState(false);
   const [loading, setLoading] = useState(true);
   const bottomRef = useRef<HTMLDivElement | null>(null);
+  // Identifiants déjà marqués "lus" : évite de réémettre des writes à chaque rechargement
+  const markedReadRef = useRef<Set<number>>(new Set());
 
   const load = useCallback(async () => {
     const email = (
@@ -60,17 +62,24 @@ export default function UserMessages() {
       .sort((a, b) => a.id - b.id);
     setMessages(thread);
     setLoading(false);
-    // Marquer comme lus les messages envoyés par l'administration ou le coach
-    const unread = thread.filter((message) => message.sender !== "Abonné" && !message.readBySubscriber);
-    if (unread.length > 0) {
-      await Promise.all(unread.map((message) => messagesDB.update(message.id, { readBySubscriber: true })));
-    }
   }, []);
 
   useEffect(() => {
     load();
     return messagesDB.subscribe(load);
   }, [load]);
+
+  // Marquer comme lus les messages de l'administration — en dehors de load()
+  // pour ne pas boucler (write → subscribe → load → write…).
+  // Ne lance les update QUE s'il existe un message non-lu, une seule fois par message.
+  useEffect(() => {
+    const unread = messages.filter(
+      (message) => message.sender !== "Abonné" && message.readBySubscriber !== true && !markedReadRef.current.has(message.id)
+    );
+    if (unread.length === 0) return;
+    unread.forEach((message) => markedReadRef.current.add(message.id));
+    Promise.all(unread.map((message) => messagesDB.update(message.id, { readBySubscriber: true }).catch(() => null)));
+  }, [messages]);
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -80,25 +89,43 @@ export default function UserMessages() {
     if (!draft.trim() || !currentEmail || sending) return;
     setSending(true);
     try {
+      const body = draft.trim();
+      const threadSubject = subject.trim() || messages.find((message) => message.subject)?.subject || "Discussion générale";
       await messagesDB.create({
         email: currentEmail,
         userName,
         sender: "Abonné",
-        subject: subject.trim() || messages.find((message) => message.subject)?.subject || null,
-        body: draft.trim(),
+        subject: threadSubject,
+        body,
         createdAt: new Date().toISOString(),
         readByAdmin: false,
         readBySubscriber: true,
       });
       setDraft("");
-      // Confirme à l'auteur par e-mail (action causée par lui)
-      notifyImportantAction("message_recu", {
-        email: currentEmail,
-        name: userName,
-        subject: subject.trim() || "Message envoyé à l'administration",
-        body: draft.trim(),
-        senderName: "Vous (copie de votre message)",
-      }).catch(() => {});
+      // Notifier l'ADMIN (Gestionnaire), pas l'auteur lui-même
+      const users = await usersDB.getAll<any>().catch(() => []);
+      const admin = (users || []).find(
+        (user: any) => user.role === "Gestionnaire" && String(user.email || "").includes("@")
+      );
+      if (admin) {
+        const adminEmail = String(admin.email).trim().toLowerCase();
+        await notificationsDB.create({
+          userEmail: adminEmail,
+          title: "Nouveau message abonné",
+          message: `${userName} vous a écrit : ${body.slice(0, 140)}`,
+          type: "message",
+          audience: "",
+          createdAt: new Date().toISOString(),
+          read: false,
+        }).catch(() => {});
+        sendImportantEmail("message_recu", {
+          email: adminEmail,
+          name: admin.name || "Gestionnaire",
+          subject: threadSubject,
+          body,
+          senderName: userName,
+        }).catch(() => {});
+      }
     } finally {
       setSending(false);
     }

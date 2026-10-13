@@ -2,6 +2,9 @@
 // NOTIFY SERVICE (client) — 1 action importante = 1 notif in-app + 1 e-mail
 // Usage : await notifyImportantAction("message_recu", { email, name, ... })
 // Paiements : await notifyPaymentConfirmation("abonnement_valide" | "renouvellement" | "achat_equipement", {...})
+// Honnêteté : chaque fonction retourne { emailed, simulated }. Si le SMTP
+// n'est pas configuré, l'e-mail est SIMULÉ (log serveur) et les textes
+// in-app le disent au lieu d'affirmer un envoi.
 // Ne bloque jamais l'UX : les erreurs e-mail sont avalées (console.warn).
 // ============================================================
 
@@ -16,6 +19,8 @@ export type NotifyPayload = TemplateData & {
   type?: string;    // success | info | warning | message
   audience?: string;
 };
+
+export type NotifyResult = { emailed: boolean; simulated: boolean };
 
 const TITLES: Record<ImportantAction, { title: string; type: string }> = {
   demande_created: { title: "Demande envoyée", type: "info" },
@@ -33,31 +38,62 @@ const TITLES: Record<ImportantAction, { title: string; type: string }> = {
   annonce: { title: "Notification", type: "info" },
 };
 
-function inAppMessage(action: ImportantAction, p: NotifyPayload): string {
-  if (p.message) return p.message;
+function inAppMessage(action: ImportantAction, p: NotifyPayload, simulated = false): string {
+  // Si l'e-mail est simulé (SMTP non configuré), on ne prétend jamais l'avoir envoyé :
+  // la notification in-app devient la preuve, et le dit explicitement.
+  const simNote = " (Envoi e-mail non configuré : retrouvez tout dans vos notifications.)";
+  const sub = (sentText: string, simText: string) => (simulated ? simText + simNote : sentText);
+  if (p.message) return simulated ? `${p.message}${simNote}` : p.message;
   switch (action) {
     case "demande_created":
-      return `Votre Inscription ${p.activityName ? `« ${p.activityName} »` : ""} ${p.planName ? `(${p.planName})` : ""} a été envoyée. Un e-mail de confirmation vous a été adressé.`;
+      return sub(
+        `Votre Inscription ${p.activityName ? `« ${p.activityName} »` : ""} ${p.planName ? `(${p.planName})` : ""} a été envoyée. Un e-mail de confirmation vous a été adressé.`,
+        `Votre Inscription ${p.activityName ? `« ${p.activityName} »` : ""} ${p.planName ? `(${p.planName})` : ""} a été envoyée et enregistrée.`
+      );
     case "demande_confirmed":
-      return `Bonne nouvelle ${p.name || ""} ! Votre demande a été confirmée. Finalisez votre abonnement. Un e-mail vous a été envoyé.`;
+      return sub(
+        `Bonne nouvelle ${p.name || ""} ! Votre demande a été confirmée. Finalisez votre abonnement. Un e-mail vous a été envoyé.`,
+        `Bonne nouvelle ${p.name || ""} ! Votre demande a été confirmée. Finalisez votre abonnement.`
+      );
     case "demande_rejected":
-      return `Votre demande a été refusée. Consultez votre e-mail pour plus d'informations.`;
+      return sub(
+        `Votre demande a été refusée. Consultez votre e-mail pour plus d'informations.`,
+        `Votre demande a été refusée. Contactez le centre via la messagerie pour plus d'informations.`
+      );
     case "abonnement_valide":
-      return `Abonnement « ${p.activityName || ""} » validé (${p.amount || ""} ${p.currency || "USD"}). Reçu ${p.reference || ""}. Détails envoyés par e-mail.`;
+      return sub(
+        `Abonnement « ${p.activityName || ""} » validé (${p.amount || ""} ${p.currency || "USD"}). Reçu ${p.reference || ""}. Détails envoyés par e-mail.`,
+        `Abonnement « ${p.activityName || ""} » validé (${p.amount || ""} ${p.currency || "USD"}). Reçu ${p.reference || ""}. Détails ci-dessous.`
+      );
     case "renouvellement":
-      return `Renouvellement « ${p.activityName || ""} » confirmé jusqu'au ${p.endDate || ""}. Détails envoyés par e-mail.`;
+      return sub(
+        `Renouvellement « ${p.activityName || ""} » confirmé jusqu'au ${p.endDate || ""}. Détails envoyés par e-mail.`,
+        `Renouvellement « ${p.activityName || ""} » confirmé jusqu'au ${p.endDate || ""}. Détails ci-dessous.`
+      );
     case "achat_equipement":
-      return `Achat confirmé (${p.amount || ""} ${p.currency || "USD"}). Facture ${p.reference || ""}. Détails envoyés par e-mail.`;
+      return sub(
+        `Achat confirmé (${p.amount || ""} ${p.currency || "USD"}). Facture ${p.reference || ""}. Détails envoyés par e-mail.`,
+        `Achat confirmé (${p.amount || ""} ${p.currency || "USD"}). Facture ${p.reference || ""}. Détails ci-dessous.`
+      );
     case "message_recu":
       return `${p.senderName || "Un expéditeur"} vous a écrit : ${(p.body || "").slice(0, 140)}`;
     case "presence":
       return `Présence enregistrée : ${p.activityName || ""} le ${p.date || ""} (${p.message || "Présent"}).`;
     case "compte_cree":
-      return `Bienvenue ${p.name || ""} ! Votre compte est créé. Identifiants envoyés par e-mail.`;
+      return sub(
+        `Bienvenue ${p.name || ""} ! Votre compte est créé. Identifiants envoyés par e-mail.`,
+        `Bienvenue ${p.name || ""} ! Votre compte est créé. Vos identifiants sont disponibles auprès du centre.`
+      );
     case "mot_de_passe":
-      return `Votre mot de passe a été modifié. Un e-mail de sécurité vous a été envoyé.`;
+      return sub(
+        `Votre mot de passe a été modifié. Un e-mail de sécurité vous a été envoyé.`,
+        `Votre mot de passe a été modifié.`
+      );
     case "profil_modifie":
-      return `Votre profil a été mis à jour. Confirmation envoyée par e-mail.`;
+      return sub(
+        `Votre profil a été mis à jour. Confirmation envoyée par e-mail.`,
+        `Votre profil a été mis à jour.`
+      );
     case "annonce":
       return p.message || p.title || "Nouvelle notification.";
     default:
@@ -65,11 +101,12 @@ function inAppMessage(action: ImportantAction, p: NotifyPayload): string {
   }
 }
 
-async function sendEmailOnly(action: ImportantAction, payload: NotifyPayload): Promise<boolean> {
+async function sendEmailOnly(action: ImportantAction, payload: NotifyPayload): Promise<NotifyResult> {
+  const out: NotifyResult = { emailed: false, simulated: false };
   try {
-    if (typeof window === "undefined") return false;
+    if (typeof window === "undefined") return out;
     const email = (payload.email || "").trim();
-    if (!email || !email.includes("@")) return false;
+    if (!email || !email.includes("@")) return out;
     const res = await fetch("/api/notify/email", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -77,30 +114,35 @@ async function sendEmailOnly(action: ImportantAction, payload: NotifyPayload): P
     });
     if (!res.ok) {
       console.warn("[notify] e-mail non envoyé :", await res.text());
-      return false;
+      return out;
     }
-    return true;
+    const data = await res.json().catch(() => ({}));
+    return { emailed: true, simulated: !!data?.simulated };
   } catch (e) {
     console.warn("[notify] e-mail erreur :", e);
-    return false;
+    return out;
   }
 }
 
 /**
- * Notifie l'acteur : crée la notification in-app + envoie l'e-mail.
- * À appeler après chaque action importante, avec l'e-mail de la personne qui l'a causée.
+ * Notifie l'acteur : envoie l'e-mail PUIS crée la notification in-app
+ * (le texte in-app dit la vérité sur l'envoi).
+ * Retourne { emailed, simulated }. N'interrompt jamais l'appelant.
  */
-export async function notifyImportantAction(action: ImportantAction, payload: NotifyPayload): Promise<void> {
+export async function notifyImportantAction(action: ImportantAction, payload: NotifyPayload): Promise<NotifyResult> {
   const email = (payload.email || "").trim().toLowerCase();
-  if (!email) return;
+  if (!email) return { emailed: false, simulated: false };
   const meta = TITLES[action] || { title: payload.title || "Notification", type: "info" };
 
-  // 1) Notification in-app (prioritaire, ne doit pas échouer silencieusement)
+  // 1) E-mail d'abord (pour connaître le statut réel avant de rédiger la notif)
+  const mail = await sendEmailOnly(action, { ...payload, email });
+
+  // 2) Notification in-app (prioritaire, ne doit pas échouer silencieusement)
   try {
     await notificationsDB.create({
       userEmail: email,
       title: payload.title || meta.title,
-      message: inAppMessage(action, payload),
+      message: inAppMessage(action, payload, mail.simulated),
       type: payload.type || meta.type,
       audience: payload.audience || "",
       createdAt: new Date().toISOString(),
@@ -109,13 +151,11 @@ export async function notifyImportantAction(action: ImportantAction, payload: No
   } catch (e) {
     console.warn("[notify] in-app impossible :", e);
   }
-
-  // 2) E-mail (secondaire, fire-and-forget)
-  await sendEmailOnly(action, { ...payload, email });
+  return mail;
 }
 
 /** Envoi d'e-mail seul (sans notif in-app), ex. copie admin. */
-export async function sendImportantEmail(action: ImportantAction, payload: NotifyPayload): Promise<boolean> {
+export async function sendImportantEmail(action: ImportantAction, payload: NotifyPayload): Promise<NotifyResult> {
   return sendEmailOnly(action, payload);
 }
 
@@ -124,20 +164,41 @@ export type PaymentConfirmAction = "abonnement_valide" | "renouvellement" | "ach
 /**
  * Confirmation de paiement : notif in-app du payeur + e-mails serveur (payeur ET admin).
  * Les e-mails partent via POST /api/notify/payment (source unique, pas de doublon) :
- * le payeur reçoit sa confirmation, l'admin (ordidimbi@gmail.com) reçoit une copie.
- * N'interrompt jamais le parcours de paiement en cas d'échec.
+ * le payeur reçoit sa confirmation, l'admin configuré (ADMIN_EMAIL) reçoit une copie.
+ * Retourne { emailed, simulated }. N'interrompt jamais le parcours de paiement en cas d'échec.
  */
-export async function notifyPaymentConfirmation(action: PaymentConfirmAction, payload: NotifyPayload): Promise<void> {
+export async function notifyPaymentConfirmation(action: PaymentConfirmAction, payload: NotifyPayload): Promise<NotifyResult> {
   const email = (payload.email || "").trim().toLowerCase();
-  if (!email || !email.includes("@")) return;
+  if (!email || !email.includes("@")) return { emailed: false, simulated: false };
   const meta = TITLES[action] || { title: "Paiement confirmé", type: "success" };
+  const out: NotifyResult = { emailed: false, simulated: false };
 
-  // 1) Notification in-app du payeur (prioritaire)
+  // 1) E-mails payeur + admin via le serveur (pour connaître le statut réel)
+  try {
+    if (typeof window !== "undefined") {
+      const res = await fetch("/api/notify/payment", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action, data: { ...payload, email } }),
+      });
+      if (!res.ok) {
+        console.warn("[notify] e-mails paiement non envoyés :", await res.text());
+      } else {
+        const data = await res.json().catch(() => ({}));
+        out.emailed = true;
+        out.simulated = !!data?.simulated;
+      }
+    }
+  } catch (e) {
+    console.warn("[notify] e-mails paiement erreur :", e);
+  }
+
+  // 2) Notification in-app du payeur (texte honnête sur l'envoi)
   try {
     await notificationsDB.create({
       userEmail: email,
       title: payload.title || meta.title,
-      message: inAppMessage(action, payload),
+      message: inAppMessage(action, payload, out.simulated),
       type: payload.type || meta.type,
       audience: payload.audience || "",
       createdAt: new Date().toISOString(),
@@ -146,17 +207,5 @@ export async function notifyPaymentConfirmation(action: PaymentConfirmAction, pa
   } catch (e) {
     console.warn("[notify] in-app paiement impossible :", e);
   }
-
-  // 2) E-mails payeur + admin via le serveur (fire-and-forget)
-  try {
-    if (typeof window === "undefined") return;
-    const res = await fetch("/api/notify/payment", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ action, data: { ...payload, email } }),
-    });
-    if (!res.ok) console.warn("[notify] e-mails paiement non envoyés :", await res.text());
-  } catch (e) {
-    console.warn("[notify] e-mails paiement erreur :", e);
-  }
+  return out;
 }

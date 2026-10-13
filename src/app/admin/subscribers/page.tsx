@@ -13,6 +13,7 @@ import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { getDynamicStatus, getDaysLeft } from "@/src/utils/subscriptionStatus";
+import { confirmAction } from "@/src/components/ui/confirm";
 
 const subscriberSchema = z.object({ name: z.string().min(2), email: z.string().email(), phone: z.string().optional(), status: z.enum(["Actif", "Suspendu", "Inactif"]).default("Actif") });
 type SubscriberForm = z.input<typeof subscriberSchema>;
@@ -56,7 +57,7 @@ export default function AdminSubscribers() {
     setIsModalOpen(false);
   };
 
-  const handleDelete = async (id: number) => { if (!confirm("Supprimer cet abonné ?")) return; await deleteUser.mutateAsync(id); };
+  const handleDelete = async (id: number) => { if (!(await confirmAction({ title: "Supprimer l'abonné", message: "Supprimer cet abonné ?", confirmLabel: "Supprimer" }))) return; await deleteUser.mutateAsync(id); };
 
   // Abonnement le plus récent par email + statut dynamique (comme côté coach)
   const subByEmail = useMemo(() => {

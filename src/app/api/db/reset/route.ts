@@ -1,8 +1,17 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { resetDatabase } from "@/src/lib/dbRegistry";
+import { sessionEmailFrom } from "@/src/lib/session";
+import { prisma } from "@/src/lib/prisma";
 
-export async function POST() {
+// Destructif : réservé à un Gestionnaire authentifié (session signée).
+export async function POST(request: NextRequest) {
   try {
+    const email = sessionEmailFrom(request);
+    if (!email) return NextResponse.json({ error: "Non authentifié." }, { status: 401 });
+    const user = await prisma.user.findFirst({ where: { email: { equals: email } } });
+    if (!user || user.role !== "Gestionnaire") {
+      return NextResponse.json({ error: "Accès réservé à l'administration." }, { status: 403 });
+    }
     await resetDatabase();
     return NextResponse.json({ ok: true });
   } catch (error: any) {

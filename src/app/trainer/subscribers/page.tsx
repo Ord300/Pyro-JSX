@@ -9,9 +9,9 @@ import { Button } from "@/src/components/ui/Button";
 import { Input } from "@/src/components/ui/Input";
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/src/components/ui/Table";
 import { Modal } from "@/src/components/ui/Modal";
-import { subscriptionsDB, messagesDB, notificationsDB } from "@/src/services/dbService";
+import { messagesDB, notificationsDB } from "@/src/services/dbService";
 import { getDynamicStatus, getDaysLeft } from "@/src/utils/subscriptionStatus";
-import { notifyImportantAction, sendImportantEmail } from "@/src/services/notifyService";
+import { sendImportantEmail } from "@/src/services/notifyService";
 import { loadTrainerContext, phoneOf, presenceStats, type TrainerContext } from "@/src/services/trainerSpace";
 import { useToast } from "@/src/contexts/ToastContext";
 
@@ -20,8 +20,6 @@ const statusVariant = (s: string) =>
 
 const dynamicOf = (s: any): string => String(s?.dynamicStatus ?? getDynamicStatus(s));
 
-const MANAGEABLE_STATUSES = ["Validée", "Expirée", "Annulée"];
-
 export default function TrainerSubscribers() {
   const toast = useToast();
   const [ctx, setCtx] = useState<TrainerContext | null>(null);
@@ -29,7 +27,6 @@ export default function TrainerSubscribers() {
   const [activityFilter, setActivityFilter] = useState("Toutes");
   const [statusFilter, setStatusFilter] = useState("Tous");
   const [selected, setSelected] = useState<any | null>(null);
-  const [saving, setSaving] = useState(false);
   const [contactTarget, setContactTarget] = useState<any | null>(null);
   const [contactSubject, setContactSubject] = useState("");
   const [contactBody, setContactBody] = useState("");
@@ -109,35 +106,6 @@ export default function TrainerSubscribers() {
       toast.addToast("Envoi impossible", "error");
     } finally {
       setSending(false);
-    }
-  };
-
-  const changeStatus = async (id: number, status: string) => {
-    setSaving(true);
-    try {
-      const updated = await subscriptionsDB.update(id, { status });
-      if (updated) {
-        const withDyn = { ...(updated as any), dynamicStatus: getDynamicStatus({ ...(updated as any), status }) };
-        setSelected((prev: any) => (prev ? { ...prev, status, dynamicStatus: withDyn.dynamicStatus } : prev));
-        await reload();
-        toast.addToast(`Abonnement « ${status} »`, "success");
-        // Notifie l'abonné concerné (in-app + e-mail)
-        const target = (updated as any) || selected;
-        if (target?.email) {
-          notifyImportantAction("annonce", {
-            email: target.email,
-            name: target.userName,
-            title: `Statut abonnement : ${status}`,
-            message: `Votre abonnement « ${target.activityName || ""} » est passé au statut « ${status} » par votre coach.`,
-            type: status === "Validée" ? "success" : "warning",
-            audience: "Suivi abonnement",
-          }).catch(() => {});
-        }
-      }
-    } catch {
-      toast.addToast("Mise à jour impossible", "error");
-    } finally {
-      setSaving(false);
     }
   };
 
@@ -297,25 +265,6 @@ export default function TrainerSubscribers() {
                 Présences : <strong>{stats.present}/{stats.total} séance(s)</strong>
                 {stats.total > 0 && ` (${Math.round((stats.present / stats.total) * 100)} %)`}
               </span>
-            </div>
-            <div>
-              <label className="mb-1 block text-sm font-medium">Changer le statut</label>
-              <div className="flex gap-2">
-                {MANAGEABLE_STATUSES.map((st) => (
-                  <button
-                    key={st}
-                    disabled={saving || selected.status === st}
-                    onClick={() => changeStatus(selected.id, st)}
-                    className={`flex-1 rounded-lg border-2 px-3 py-2 text-sm font-semibold transition-all disabled:opacity-40 ${
-                      selected.status === st
-                        ? "border-sky-500 bg-sky-50 text-sky-700 dark:bg-sky-900/20 dark:text-sky-300"
-                        : "border-slate-200 text-slate-500 hover:border-sky-300 dark:border-slate-700 dark:text-slate-400"
-                    }`}
-                  >
-                    {st}
-                  </button>
-                ))}
-              </div>
             </div>
             <Button variant="outline" className="w-full" onClick={() => setSelected(null)}>
               <X className="mr-2 h-4 w-4" />Fermer

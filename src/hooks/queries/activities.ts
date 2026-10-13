@@ -1,11 +1,19 @@
 "use client";
 
+import { useEffect } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { activitiesService } from "@/src/services/activitiesService";
+import { db } from "@/src/services/dbService";
 import type { Activity } from "@/src/data/mockData";
 import { useToast } from "@/src/contexts/ToastContext";
 
 export function useActivities() {
+  const qc = useQueryClient();
+  useEffect(() => {
+    return db.subscribe(() => {
+      qc.invalidateQueries({ queryKey: ["activities"] });
+    });
+  }, [qc]);
   return useQuery<Activity[]>({
     queryKey: ["activities"],
     queryFn: () => activitiesService.getAll(),
@@ -22,11 +30,11 @@ export function useCreateActivity() {
     onMutate: async (newItem) => {
       await qc.cancelQueries({ queryKey: ["activities"] });
       const previous = qc.getQueryData<Activity[]>(["activities"]);
-      qc.setQueryData<Activity[]>(["activities"], (old) => old ? [{ id: Math.max(0, ...old.map((i) => i.id)) + 1, ...newItem } as Activity, ...old] : []);
+      qc.setQueryData<Activity[]>(["activities"], (old) => [{ id: -Date.now(), ...newItem } as Activity, ...(old ?? [])]);
       return { previous };
     },
     onError: (_err, _new, context: any) => { if (context?.previous) qc.setQueryData(["activities"], context.previous); addToast("Erreur création activité", "error"); },
-    onSuccess: () => addToast("Activité créée", "success"),
+    onSuccess: () => { addToast("Activité créée", "success"); db.notifyChange("activities"); },
     onSettled: () => qc.invalidateQueries({ queryKey: ["activities"] })
   });
 }
@@ -45,7 +53,7 @@ export function useUpdateActivity() {
       return { previous };
     },
     onError: (_err, _vars, context: any) => { if (context?.previous) qc.setQueryData(["activities"], context.previous); addToast("Erreur mise à jour activité", "error"); },
-    onSuccess: () => addToast("Activité mise à jour", "success"),
+    onSuccess: () => { addToast("Activité mise à jour", "success"); db.notifyChange("activities"); },
     onSettled: () => qc.invalidateQueries({ queryKey: ["activities"] })
   });
 }
@@ -64,7 +72,7 @@ export function useDeleteActivity() {
       return { previous };
     },
     onError: (_err, _id, context: any) => { if (context?.previous) qc.setQueryData(["activities"], context.previous); addToast("Erreur suppression activité", "error"); },
-    onSuccess: () => addToast("Activité supprimée", "success"),
+    onSuccess: () => { addToast("Activité supprimée", "success"); db.notifyChange("activities"); },
     onSettled: () => qc.invalidateQueries({ queryKey: ["activities"] })
   });
 }

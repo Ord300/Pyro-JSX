@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Search, Plus, Edit2, Trash2, Eye } from "lucide-react";
 import { Button } from "@/src/components/ui/Button";
 import { Input } from "@/src/components/ui/Input";
@@ -13,6 +13,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { userSchema } from "@/src/schemas/user";
 import type { UserForm } from "@/src/schemas/user";
 import { useUsers, useCreateUser, useUpdateUser, useDeleteUser } from "@/src/hooks/queries/users";
+import { confirmAction } from "@/src/components/ui/confirm";
 import { useSubscriptions } from "@/src/hooks/queries/subscriptions";
 import { getDynamicStatus } from "@/src/utils/subscriptionStatus";
 
@@ -34,6 +35,18 @@ export default function AdminUsers() {
   const deleteUser = useDeleteUser();
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editing, setEditing] = useState<User | null>(null);
+
+  useEffect(() => {
+    try {
+      const q = new URLSearchParams(window.location.search).get("q");
+      if (q) {
+        setSearch(q);
+        setPage(1);
+      }
+    } catch {
+      // ignore
+    }
+  }, []);
 
   const { register, handleSubmit, reset, formState: { errors, isSubmitting } } = useForm<UserForm>({
     resolver: zodResolver(userSchema) as any,
@@ -62,7 +75,7 @@ export default function AdminUsers() {
   });
 
   const handleDelete = async (u: User) => {
-    if (!confirm(`Supprimer ${u.name} ?`)) return;
+    if (!(await confirmAction({ title: "Supprimer l'utilisateur", message: `Supprimer ${u.name} ?`, confirmLabel: "Supprimer" }))) return;
     await deleteUser.mutateAsync(u.id);
   };
 
@@ -94,6 +107,12 @@ export default function AdminUsers() {
   );
   const paginated = filtered.slice((page - 1) * perPage, page * perPage);
   const totalPages = Math.ceil(filtered.length / perPage);
+
+  // Clamp : après suppression/filtrage, la page courante peut devenir vide.
+  useEffect(() => {
+    if (totalPages > 0 && page > totalPages) setPage(totalPages);
+    if (totalPages === 0 && page !== 1) setPage(1);
+  }, [totalPages, page]);
 
   return (
     <div className="space-y-6">

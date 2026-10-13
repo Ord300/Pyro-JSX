@@ -18,7 +18,7 @@ export default function Register() {
   const { data: activities = [] } = useActivities();
   const gallerySlides = useGallerySlides();
   const [loading, setLoading] = useState(false);
-  const [form, setForm] = useState({ name: "", email: "", phone: "", plan: "" });
+  const [form, setForm] = useState({ name: "", email: "", phone: "", plan: "", activityId: "" });
   const [errors, setErrors] = useState<Partial<typeof form>>({});
   const [slide, setSlide] = useState(0);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -47,26 +47,65 @@ export default function Register() {
 
   const validate = () => {
     const e: Partial<typeof form> = {};
-    if (!form.name) e.name = "Requis";
-    if (!form.email) e.email = "Requis";
-    if (!form.phone) e.phone = "Requis";
+    const name = form.name.trim();
+    const email = form.email.trim().toLowerCase();
+    const phone = form.phone.trim();
+    if (!name) e.name = "Le nom est requis.";
+    if (!email) e.email = "L'e-mail est requis.";
+    else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) e.email = "Adresse e-mail invalide.";
+    if (!phone) e.phone = "Le téléphone est requis.";
+    else if (!/^(\+243|0)\d{9}$/.test(phone.replace(/[\s.\-]/g, "")))
+      e.phone = "Numéro invalide. Format attendu : +243 XXX XXX XXX.";
     return e;
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (loading) return;
     const errs = validate();
     if (Object.keys(errs).length > 0) {
       setErrors(errs);
       return;
     }
+    setErrors({});
     setLoading(true);
-    setTimeout(async () => {
-      await subscriptionFlow.createRequest({ name: form.name, email: form.email, phone: form.phone, subject: "Inscription", description: `Plan: ${form.plan || "Basique"}` });
-      setLoading(false);
+    try {
+      const name = form.name.trim();
+      const email = form.email.trim().toLowerCase();
+      const phone = form.phone.trim();
+      // Anti-doublon : une demande "En attente" existe déjà pour cet e-mail
+      const all = await subscriptionFlow.requests();
+      const duplicate = all.find(
+        (request) =>
+          String(request.email || "").trim().toLowerCase() === email &&
+          request.status === "En attente" &&
+          (request.subject === "Inscription" ||
+            (request.subject && request.subject.toLowerCase().includes("abonnement")))
+      );
+      if (duplicate) {
+        setErrors({ email: "Une demande est déjà en cours pour cet e-mail." });
+        return;
+      }
+      const activity = activities.find((item) => String(item.id) === form.activityId) || null;
+      const planName = form.plan || "Basique";
+      await subscriptionFlow.createRequest({
+        name,
+        email,
+        phone,
+        subject: "Inscription",
+        description: "Demande d'inscription",
+        activityId: activity ? activity.id : undefined,
+        activityName: activity ? activity.name : undefined,
+        planId: planName.toLowerCase(),
+        planName,
+      });
       toast.addToast("Votre Inscription a été envoyée. Nous vous contacterons bientôt.", "success");
       router.push("/verification");
-    }, 700);
+    } catch {
+      toast.addToast("Impossible d'envoyer votre demande. Veuillez réessayer.", "error");
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -186,6 +225,21 @@ export default function Register() {
                   <label htmlFor="phone" className="text-sm font-medium text-slate-700 dark:text-slate-300">Téléphone</label>
                   <Input id="phone" type="tel" value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} placeholder="+243 XXX XXX XXX" error={!!errors.phone} />
                   {errors.phone && <p className="text-xs text-red-500">{errors.phone}</p>}
+                </div>
+
+                <div className="space-y-1.5">
+                  <label htmlFor="activity" className="text-sm font-medium text-slate-700 dark:text-slate-300">Activité souhaitée</label>
+                  <select
+                    id="activity"
+                    value={form.activityId}
+                    onChange={(e) => setForm({ ...form, activityId: e.target.value })}
+                    className="flex h-10 w-full rounded-md border border-slate-300 bg-transparent px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent dark:border-slate-700 dark:text-slate-50"
+                  >
+                    <option value="">Choisir une activité</option>
+                    {activities.map((activity) => (
+                      <option key={activity.id} value={String(activity.id)}>{activity.name}</option>
+                    ))}
+                  </select>
                 </div>
 
                 <div className="space-y-1.5">

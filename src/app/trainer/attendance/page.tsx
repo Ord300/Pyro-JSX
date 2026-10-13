@@ -7,8 +7,10 @@ import { Badge } from "@/src/components/ui/Badge";
 import { Button } from "@/src/components/ui/Button";
 import { Input } from "@/src/components/ui/Input";
 import { attendancesDB } from "@/src/services/dbService";
+import { confirmAction } from "@/src/components/ui/confirm";
 import { notifyImportantAction } from "@/src/services/notifyService";
 import { loadTrainerContext, type TrainerContext } from "@/src/services/trainerSpace";
+import { getDynamicStatus } from "@/src/utils/subscriptionStatus";
 import { useToast } from "@/src/contexts/ToastContext";
 
 const todayStr = () => new Date().toISOString().slice(0, 10);
@@ -41,7 +43,9 @@ export default function TrainerAttendance() {
 
   const roster = useMemo(() => {
     if (!ctx || !activity) return [];
-    return ctx.mySubscriptions.filter((s) => s.activityName === activity);
+    return ctx.mySubscriptions.filter(
+      (s) => s.activityName === activity && ["Validée", "En attente", "Expirée"].includes(getDynamicStatus(s))
+    );
   }, [ctx, activity]);
 
   // Initialise l'appel : valeurs enregistrées, sinon présent par défaut si abonnement validé
@@ -50,7 +54,7 @@ export default function TrainerAttendance() {
     roster.forEach((s) => {
       const key = String(s.email ?? s.userName).toLowerCase();
       const existing = sessionRows.find((r) => String(r.email).toLowerCase() === key);
-      initial[key] = existing ? !!existing.present : s.status === "Validée";
+      initial[key] = existing ? !!existing.present : getDynamicStatus(s) === "Validée";
     });
     setMarks(initial);
   }, [roster, sessionRows]);
@@ -94,15 +98,17 @@ export default function TrainerAttendance() {
       }
       await reload();
       toast.addToast(`Présences enregistrées (${presentCount}/${roster.length} présents)`, "success");
-      // Notifie chaque abonné présent (in-app + e-mail) — fire-and-forget
+      // Notifie uniquement les présents (in-app + e-mail) — fire-and-forget, les absents ne reçoivent rien
       roster.forEach((s) => {
+        const key = String(s.email ?? s.userName).toLowerCase();
+        if (!marks[key]) return;
         if (!s.email?.includes("@")) return;
         notifyImportantAction("presence", {
           email: s.email,
           name: s.userName,
           activityName: activity,
           date,
-          message: marks[String(s.email ?? s.userName).toLowerCase()] ? "Présent(e)" : "Absent(e)",
+          message: "Présent(e)",
         }).catch(() => {});
       });
     } catch {
@@ -126,11 +132,17 @@ export default function TrainerAttendance() {
   }, [ctx]);
 
   const deleteSession = async (activityName: string, sessionDate: string) => {
-    if (!ctx || !confirm(`Supprimer l'appel du ${sessionDate} (${activityName}) ?`)) return;
-    const rows = ctx.myAttendances.filter((a) => a.activityName === activityName && a.date === sessionDate);
-    await Promise.all(rows.map((r) => attendancesDB.delete(r.id)));
-    await reload();
-    toast.addToast("Séance supprimée", "success");
+    if (!ctx) return;
+    const ok = await confirmAction({ title: "Supprimer la séance", message: `Supprimer l'appel du ${sessionDate} (${activityName}) ?`, confirmLabel: "Supprimer" });
+    if (!ok) return;
+    try {
+      const rows = ctx.myAttendances.filter((a) => a.activityName === activityName && a.date === sessionDate);
+      await Promise.all(rows.map((r) => attendancesDB.delete(r.id)));
+      await reload();
+      toast.addToast("Séance supprimée", "success");
+    } catch {
+      toast.addToast("Suppression impossible", "error");
+    }
   };
 
   if (!ctx) return <p className="text-sm text-slate-500">Chargement…</p>;
@@ -171,6 +183,7 @@ export default function TrainerAttendance() {
               {roster.map((s) => {
                 const key = String(s.email ?? s.userName).toLowerCase();
                 const present = !!marks[key];
+                const dynStatus = getDynamicStatus(s);
                 return (
                   <li key={s.id} className="flex items-center gap-3 px-3 py-2.5">
                     <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-sky-100 text-xs font-bold text-sky-700 dark:bg-sky-900/30 dark:text-sky-300">
@@ -180,7 +193,7 @@ export default function TrainerAttendance() {
                       <p className="truncate text-sm font-medium text-slate-900 dark:text-white">{s.userName}</p>
                       <p className="text-xs text-slate-400">{s.email}</p>
                     </div>
-                    <Badge variant={s.status === "Validée" ? "success" : "warning"} className="hidden sm:inline-flex">{s.status}</Badge>
+                    <Badge variant={dynStatus === "Validée" ? "success" : "warning"} className="hidden sm:inline-flex">{dynStatus}</Badge>
                     <div className="flex overflow-hidden rounded-lg border border-slate-200 dark:border-slate-700">
                       <button
                         onClick={() => toggle(key, true)}

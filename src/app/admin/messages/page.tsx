@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { MessageSquare, Search, Send, Inbox } from "lucide-react";
+import { MessageSquare, Search, Send, Inbox, ArrowLeft } from "lucide-react";
 import { Badge } from "@/src/components/ui/Badge";
 import { Button } from "@/src/components/ui/Button";
 import { Input } from "@/src/components/ui/Input";
@@ -44,6 +44,8 @@ export default function AdminMessages() {
   const [search, setSearch] = useState("");
   const [draft, setDraft] = useState("");
   const [sending, setSending] = useState(false);
+  // Sur mobile : liste d'abord, panneau conversation après sélection
+  const [mobileThreadOpen, setMobileThreadOpen] = useState(false);
   const bottomRef = useRef<HTMLDivElement | null>(null);
 
   const load = useCallback(async () => {
@@ -135,7 +137,10 @@ export default function AdminMessages() {
 
   return (
     <div className="flex h-[calc(100vh-9rem)] min-h-[570px] overflow-hidden rounded-xl border border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-900">
-      <aside className="flex w-full shrink-0 flex-col border-r border-slate-200 sm:w-80 dark:border-slate-800">
+      <aside className={cn(
+        "w-full shrink-0 flex-col border-r border-slate-200 sm:flex sm:w-80 dark:border-slate-800",
+        mobileThreadOpen ? "hidden" : "flex"
+      )}>
         <div className="p-4">
           <div className="flex items-center justify-between">
             <h1 className="font-bold text-slate-900 dark:text-white">Messages</h1>
@@ -156,7 +161,7 @@ export default function AdminMessages() {
             conversations.map((conversation) => (
               <button
                 key={conversation.email}
-                onClick={() => setSelectedEmail(conversation.email)}
+                onClick={() => { setSelectedEmail(conversation.email); setMobileThreadOpen(true); }}
                 className={cn(
                   "w-full border-t border-slate-100 p-4 text-left transition-colors dark:border-slate-800",
                   selected?.email === conversation.email ? "bg-primary-50 dark:bg-primary-900/20" : "hover:bg-slate-50 dark:hover:bg-slate-800"
@@ -190,7 +195,10 @@ export default function AdminMessages() {
         </div>
       </aside>
 
-      <section className="hidden min-w-0 flex-1 flex-col sm:flex">
+      <section className={cn(
+        "min-w-0 flex-1 flex-col",
+        selected && mobileThreadOpen ? "flex" : "hidden sm:flex"
+      )}>
         {!selected ? (
           <div className="flex flex-1 flex-col items-center justify-center p-6 text-center text-slate-500">
             <MessageSquare className="mb-3 h-12 w-12 text-slate-300 dark:text-slate-600" />
@@ -199,6 +207,9 @@ export default function AdminMessages() {
         ) : (
           <>
             <header className="flex items-center gap-3 border-b border-slate-200 p-4 dark:border-slate-800">
+              <Button variant="ghost" size="sm" className="sm:hidden" onClick={() => setMobileThreadOpen(false)} title="Retour à la liste">
+                <ArrowLeft className="mr-1 h-4 w-4" />Retour
+              </Button>
               <span className="flex h-10 w-10 items-center justify-center rounded-full bg-primary-100 text-xs font-bold text-primary-700 dark:bg-primary-900 dark:text-primary-200">
                 {initialsOf(selected.name)}
               </span>
@@ -239,13 +250,6 @@ export default function AdminMessages() {
           </>
         )}
       </section>
-
-      <div className="flex flex-1 items-center justify-center p-6 text-center text-slate-500 sm:hidden">
-        <div>
-          <MessageSquare className="mx-auto mb-3 h-10 w-10" />
-          Sélectionnez une conversation sur un écran plus large.
-        </div>
-      </div>
     </div>
   );
 }

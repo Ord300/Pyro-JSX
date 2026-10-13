@@ -87,13 +87,15 @@ export default function UserHistory() {
     return () => unsubs.forEach((fn) => fn());
   }, [load]);
 
+  // Sécurité : appartenance stricte — e-mail exact (insensible à la casse)
+  // OU identifiant utilisateur exact. AUCUN repli par nom : une correspondance
+  // approximative (« ana » dans « Diana ») exposerait les données d'homonymes.
   const matchesUser = useCallback(
     (item: any) => {
       if (!currentEmail) return false;
       if (String(item.email || "").toLowerCase() === currentEmail) return true;
-      if (currentUser && item.userId === currentUser.id) return true;
-      const name = String(currentUser?.name || "").toLowerCase();
-      return Boolean(name) && String(item.userName || "").toLowerCase().includes(name);
+      if (currentUser && item.userId != null && item.userId === currentUser.id) return true;
+      return false;
     },
     [currentEmail, currentUser]
   );
@@ -268,7 +270,7 @@ export default function UserHistory() {
             <option value="all">Toute la période</option>
             <option value="7d">7 derniers jours</option>
             <option value="30d">30 derniers jours</option>
-            <option value="year">Année en cours</option>
+            <option value="year">12 derniers mois</option>
           </select>
           <div className="relative">
             <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />

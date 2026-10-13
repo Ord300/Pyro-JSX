@@ -3,7 +3,7 @@ export type SubscriptionStatus = 'En attente' | 'Validée' | 'Expirée' | 'Annul
 export interface SubscriptionPlan {
   id: string;
   name: string;
-  period: 'Mois' | 'Année';
+  period: 'Mois' | 'Année' | 'Semaine';
   price: number;
   currency: string;
   features: string[];

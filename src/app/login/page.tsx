@@ -95,7 +95,7 @@ export default function Login() {
                 <div className="space-y-1.5">
                   <div className="flex items-center justify-between">
                     <label htmlFor="login-password" className="text-sm font-medium text-slate-700 dark:text-slate-300">Mot de passe</label>
-                    <Link href="/forgot-password" className="text-xs text-primary-600 hover:underline dark:text-primary-400">Mot de passe oublié ?</Link>
+                    <span className="text-xs text-slate-400 dark:text-slate-500" title="Adressez-vous à l'accueil du centre pour réinitialiser votre mot de passe">Mot de passe oublié ?</span>
                   </div>
                   <div className="relative">
                     <Input id="login-password" type={showPwd ? "text" : "password"} placeholder="••••••••" value={form.password} onChange={(e) => setForm({ ...form, password: e.target.value })} required className="pr-10" />

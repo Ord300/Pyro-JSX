@@ -1,11 +1,19 @@
 "use client";
 
+import { useEffect } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { userService } from "@/src/services/userService";
+import { db } from "@/src/services/dbService";
 import type { User } from "@/src/types/user";
 import { useToast } from "@/src/contexts/ToastContext";
 
 export function useUsers() {
+  const qc = useQueryClient();
+  useEffect(() => {
+    return db.subscribe(() => {
+      qc.invalidateQueries({ queryKey: ["users"] });
+    });
+  }, [qc]);
   return useQuery<User[]>({
     queryKey: ["users"],
     queryFn: () => userService.getAll(),
@@ -22,11 +30,11 @@ export function useCreateUser() {
     onMutate: async (newUser) => {
       await qc.cancelQueries({ queryKey: ["users"] });
       const previous = qc.getQueryData<User[]>(["users"]);
-      qc.setQueryData<User[]>(["users"], (old) => old ? [{ id: Math.max(0, ...old.map((i) => i.id)) + 1, ...newUser } as User, ...old] : []);
+      qc.setQueryData<User[]>(["users"], (old) => [{ id: -Date.now(), ...newUser } as User, ...(old ?? [])]);
       return { previous };
     },
     onError: (_err, _newUser, context: any) => { if (context?.previous) qc.setQueryData(["users"], context.previous); addToast("Erreur création utilisateur", "error"); },
-    onSuccess: () => addToast("Utilisateur créé", "success"),
+    onSuccess: () => { addToast("Utilisateur créé", "success"); db.notifyChange("users"); },
     onSettled: () => qc.invalidateQueries({ queryKey: ["users"] })
   });
 }
@@ -45,7 +53,7 @@ export function useUpdateUser() {
       return { previous };
     },
     onError: (_err, _vars, context: any) => { if (context?.previous) qc.setQueryData(["users"], context.previous); addToast("Erreur mise à jour utilisateur", "error"); },
-    onSuccess: () => addToast("Utilisateur mis à jour", "success"),
+    onSuccess: () => { addToast("Utilisateur mis à jour", "success"); db.notifyChange("users"); },
     onSettled: () => qc.invalidateQueries({ queryKey: ["users"] })
   });
 }
@@ -64,7 +72,7 @@ export function useDeleteUser() {
       return { previous };
     },
     onError: (_err, _id, context: any) => { if (context?.previous) qc.setQueryData(["users"], context.previous); addToast("Erreur suppression utilisateur", "error"); },
-    onSuccess: () => addToast("Utilisateur supprimé", "success"),
+    onSuccess: () => { addToast("Utilisateur supprimé", "success"); db.notifyChange("users"); },
     onSettled: () => qc.invalidateQueries({ queryKey: ["users"] })
   });
 }

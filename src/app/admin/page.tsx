@@ -13,6 +13,8 @@ import { Badge } from "@/src/components/ui/Badge";
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/src/components/ui/Table";
 import { Button } from "@/src/components/ui/Button";
 import { paymentsDB, subscriptionRequestsDB, subscriptionsDB, usersDB, activitiesDB, trainersDB, notificationsDB } from "@/src/services/dbService";
+import { subscriptionFlow } from "@/src/services/subscriptionFlowService";
+import { confirmAction } from "@/src/components/ui/confirm";
 import { getDynamicStatus } from "@/src/utils/subscriptionStatus";
 
 const statusBadge = (status: string) => {
@@ -83,7 +85,7 @@ export default function AdminDashboard() {
   const [allSubscriptions, setAllSubscriptions] = useState<any[]>([]);
   const [allActivities, setAllActivities] = useState<any[]>([]);
   const [actingId, setActingId] = useState<number | string | null>(null);
-
+  const [actionError, setActionError] = useState("");
   const compute = async () => {
     const [users, subs, reqs, acts, trainers, payments] = await Promise.all([
       usersDB.getAll<any>(),
@@ -178,11 +180,18 @@ export default function AdminDashboard() {
   }, []);
 
   const handleRequestStatus = async (id: number | string, status: "Confirmée" | "Refusée") => {
-    if (!confirm(`Confirmer cette action ? La demande passera « ${status} » et le demandeur sera notifié.`)) return;
+    if (actingId) return;
+    setActionError("");
+    if (!(await confirmAction({ title: status === "Confirmée" ? "Confirmer la demande" : "Refuser la demande", message: `Confirmer cette action ? La demande passera « ${status} » et le demandeur sera notifié.${status === "Confirmée" ? " Son abonnement sera créé." : ""}`, confirmLabel: status }))) return;
     setActingId(id);
     try {
       const target = pendingRequests.find((r) => String(r.id) === String(id));
-      await subscriptionRequestsDB.update(Number(id), { status });
+      if (status === "Confirmée") {
+        // Crée pour de vrai : paiement + abonnement + reçu + compte (idempotent).
+        await subscriptionFlow.confirmRequest(Number(id));
+      } else {
+        await subscriptionRequestsDB.update(Number(id), { status });
+      }
       if (target?.email) {
         await notificationsDB.create({
           userEmail: String(target.email).toLowerCase(),
@@ -197,6 +206,8 @@ export default function AdminDashboard() {
         }).catch(() => {});
       }
       await compute();
+    } catch (e: any) {
+      setActionError(e?.message || "Action impossible. Réessayez.");
     } finally {
       setActingId(null);
     }
@@ -285,6 +296,11 @@ export default function AdminDashboard() {
       </div>
 
       {/* Demandes en attente */}
+      {actionError && (
+        <div className="rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700 dark:border-red-800 dark:bg-red-900/20 dark:text-red-300">
+          {actionError}
+        </div>
+      )}
       <div className="rounded-xl border border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-900 shadow-sm overflow-hidden">
         <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 px-6 py-4">
           <div>

@@ -6,9 +6,8 @@ import { cn } from "@/src/utils/cn";
 import { useActivities } from "@/src/hooks/queries/activities";
 import { mockSubscriptionPlans } from "@/src/data/subscriptionData";
 import { mockPaymentProviders } from "@/src/data/paymentData";
-import { processPayment } from "@/src/services/paymentService";
+import { subscriptionFlow } from "@/src/services/subscriptionFlowService";
 import { formatAgeRange } from "@/src/data/mockData";
-import type { PaymentMethod } from "@/src/types/payment";
 import { CheckCircle2, ChevronLeft, ChevronRight, Loader2, ShieldCheck } from "lucide-react";
 
 interface SubscriptionWizardProps {
@@ -35,11 +34,22 @@ export function SubscriptionWizard({ onComplete, onCancel }: SubscriptionWizardP
   const [agreedToTerms, setAgreedToTerms] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
   const [paymentReference, setPaymentReference] = useState("");
+  const [isPendingCash, setIsPendingCash] = useState(false);
   const [error, setError] = useState("");
 
   const selectedActivityData = activities.find((a) => a.id === selectedActivity);
   const selectedPlanData = mockSubscriptionPlans.find((p) => p.id === selectedPlan);
   const selectedProviderData = mockPaymentProviders.find((p) => p.id === selectedProvider);
+
+  // Tarif RÉEL de l'activité sélectionnée (source unique), pas le prix vitrine.
+  const realAmount = (planPeriod?: string): number | null => {
+    if (!selectedActivityData || !planPeriod) return null;
+    const key = planPeriod === "Mois" ? "priceMonth" : planPeriod === "Semaine" ? "priceWeek" : "priceYear";
+    const value = Number((selectedActivityData as any)[key]);
+    return Number.isFinite(value) ? value : null;
+  };
+  const displayPrice = (planPeriod: string, fallback: number): number =>
+    realAmount(planPeriod) ?? fallback;
 
   const canProceed = () => {
     switch (currentStep) {
@@ -52,7 +62,9 @@ export function SubscriptionWizard({ onComplete, onCancel }: SubscriptionWizardP
       case 4:
         return selectedPlan !== null;
       case 5:
-        return selectedProvider !== null && (selectedProvider === "cash" || phoneNumber.length >= 10);
+        if (selectedProvider === "cash") return true;
+        if (selectedProvider === "card") return true;
+        return selectedProvider !== null && phoneNumber.replace(/[\s.\-]/g, "").length >= 10;
       default:
         return false;
     }
@@ -68,32 +80,38 @@ export function SubscriptionWizard({ onComplete, onCancel }: SubscriptionWizardP
   };
 
   const handlePayment = async () => {
-    if (!selectedPlanData || !selectedProviderData) return;
+    if (!selectedPlanData || !selectedProviderData || !selectedActivityData) return;
     setIsProcessing(true);
     setError("");
+    try {
+      const email = (localStorage.getItem("current_user_email") || "").trim().toLowerCase();
+      if (!email.includes("@")) throw new Error("Session expirée : reconnectez-vous puis réessayez.");
 
-    const methodMap: Record<string, PaymentMethod> = {
-      mpesa: "M-Pesa",
-      "orange-money": "Orange Money",
-      card: "Carte Bancaire",
-      cash: "Espèces",
-    };
+      const methodMap: Record<string, "M-Pesa" | "Orange Money" | "Carte Bancaire" | "Espèces"> = {
+        mpesa: "M-Pesa",
+        "orange-money": "Orange Money",
+        card: "Carte Bancaire",
+        cash: "Espèces",
+      };
 
-    const result = await processPayment({
-      amount: selectedPlanData.price,
-      currency: selectedPlanData.currency,
-      method: methodMap[selectedProviderData.id],
-      phoneNumber: selectedProvider === "cash" ? undefined : phoneNumber,
-      description: `Abonnement ${selectedPlanData.name} - ${selectedActivityData?.name}`,
-    });
+      const result = await subscriptionFlow.subscribeDirectly({
+        email,
+        activityId: selectedActivityData.id,
+        plan: { id: selectedPlanData.id, name: selectedPlanData.name, period: selectedPlanData.period },
+        method: methodMap[selectedProviderData.id],
+        phone: selectedProvider === "cash" || selectedProvider === "card" ? "" : phoneNumber,
+      });
 
-    setIsProcessing(false);
-
-    if (result.success) {
-      setPaymentReference(result.reference);
+      if (result.duplicate) {
+        throw new Error("Vous avez déjà un abonnement actif pour cette activité.");
+      }
+      setIsPendingCash(result.pending);
+      setPaymentReference(result.receipt?.reference || result.payment?.reference || "");
       setCurrentStep(6);
-    } else {
-      setError(result.message);
+    } catch (e: any) {
+      setError(e?.message || "Paiement impossible. Réessayez.");
+    } finally {
+      setIsProcessing(false);
     }
   };
 
@@ -166,7 +184,7 @@ export function SubscriptionWizard({ onComplete, onCancel }: SubscriptionWizardP
       </div>
       <div className="rounded-lg border border-amber-200 bg-amber-50 p-4 dark:border-amber-800 dark:bg-amber-900/20">
         <p className="text-sm text-amber-800 dark:text-amber-200">
-          <strong>Note :</strong> Ceci est une simulation de paiement. Aucune transaction réelle ne sera effectuée.
+          <strong>Note :</strong> mode démonstration — aucun débit mobile réel, mais votre paiement est enregistré et votre abonnement est activé.
         </p>
       </div>
     </div>
@@ -259,7 +277,7 @@ export function SubscriptionWizard({ onComplete, onCancel }: SubscriptionWizardP
             )}
             <h4 className="text-lg font-semibold text-slate-900 dark:text-white">{plan.name}</h4>
             <p className="mt-2 text-3xl font-bold text-primary-600 dark:text-primary-400">
-              {plan.price} <span className="text-sm font-normal text-slate-500">{plan.currency}</span>
+              {displayPrice(plan.period, plan.price)} <span className="text-sm font-normal text-slate-500">{plan.currency}</span>
             </p>
             <p className="text-sm text-slate-500 dark:text-slate-400">/ {plan.period.toLowerCase()}</p>
             <ul className="mt-4 space-y-2">
@@ -286,7 +304,7 @@ export function SubscriptionWizard({ onComplete, onCancel }: SubscriptionWizardP
           <p>Activité : <strong>{selectedActivityData?.name}</strong></p>
           <p>Formule : <strong>{selectedPlanData?.name}</strong></p>
           <p className="text-lg font-bold text-primary-600 dark:text-primary-400">
-            Total : {selectedPlanData?.price} {selectedPlanData?.currency}
+            Total : {selectedPlanData ? displayPrice(selectedPlanData.period, selectedPlanData.price) : "—"} {selectedPlanData?.currency}
           </p>
         </div>
       </div>
@@ -315,7 +333,7 @@ export function SubscriptionWizard({ onComplete, onCancel }: SubscriptionWizardP
         </div>
       </div>
 
-      {selectedProvider && selectedProvider !== "cash" && (
+      {selectedProvider && selectedProvider !== "cash" && selectedProvider !== "card" && (
         <div>
           <label className="mb-2 block text-sm font-medium text-slate-700 dark:text-slate-300">
             Numéro de téléphone ({selectedProviderData?.name})
@@ -359,9 +377,13 @@ export function SubscriptionWizard({ onComplete, onCancel }: SubscriptionWizardP
       <div className="mx-auto flex h-20 w-20 items-center justify-center rounded-full bg-green-100 dark:bg-green-900/30">
         <CheckCircle2 className="h-12 w-12 text-green-600 dark:text-green-400" />
       </div>
-      <h3 className="mt-6 text-2xl font-bold text-slate-900 dark:text-white">Abonnement confirmé !</h3>
+      <h3 className="mt-6 text-2xl font-bold text-slate-900 dark:text-white">
+        {isPendingCash ? "Demande enregistrée !" : "Abonnement confirmé !"}
+      </h3>
       <p className="mt-2 text-slate-600 dark:text-slate-400">
-        Votre Inscription a été traitée avec succès.
+        {isPendingCash
+          ? "Présentez-vous à la réception pour payer en espèces et activer votre abonnement."
+          : "Votre Inscription a été traitée avec succès."}
       </p>
       <div className="mx-auto mt-6 max-w-md rounded-lg border border-slate-200 bg-slate-50 p-6 dark:border-slate-700 dark:bg-slate-800/50">
         <div className="space-y-3 text-sm">
@@ -380,7 +402,7 @@ export function SubscriptionWizard({ onComplete, onCancel }: SubscriptionWizardP
           <div className="flex justify-between">
             <span className="text-slate-500 dark:text-slate-400">Montant</span>
             <span className="font-semibold text-primary-600 dark:text-primary-400">
-              {selectedPlanData?.price} {selectedPlanData?.currency}
+              {selectedPlanData ? displayPrice(selectedPlanData.period, selectedPlanData.price) : "—"} {selectedPlanData?.currency}
             </span>
           </div>
           <div className="flex justify-between">
@@ -390,7 +412,9 @@ export function SubscriptionWizard({ onComplete, onCancel }: SubscriptionWizardP
         </div>
       </div>
       <p className="mt-4 text-sm text-slate-500 dark:text-slate-400">
-        Un reçu a été généré. Vous pouvez le consulter dans votre espace abonné.
+        {isPendingCash
+          ? "Votre demande est en attente de paiement à la réception."
+          : "Un reçu a été généré. Vous pouvez le consulter dans votre espace abonné."}
       </p>
     </div>
   );

@@ -11,6 +11,7 @@ const STORAGE_KEY = "admin_settings";
 
 export default function AdminSettings() {
   const [settings, setSettings] = useState<Settings>({ siteName: "Aigles du congo", contactEmail: "", currency: "USD" });
+  const [saved, setSaved] = useState(false);
 
   useEffect(() => {
     try {
@@ -21,7 +22,8 @@ export default function AdminSettings() {
 
   const save = () => {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(settings));
-    alert("Paramètres enregistrés");
+    setSaved(true);
+    setTimeout(() => setSaved(false), 3000);
   };
 
   return (
@@ -46,7 +48,8 @@ export default function AdminSettings() {
             <Input value={settings.currency} onChange={(e) => setSettings((s) => ({ ...s, currency: e.target.value }))} />
           </div>
         </div>
-        <div className="mt-4 flex justify-end">
+        <div className="mt-4 flex items-center justify-end gap-3">
+          {saved && <span className="text-sm font-medium text-green-600 dark:text-green-400">Paramètres enregistrés ✓</span>}
           <Button onClick={save}>Enregistrer</Button>
         </div>
       </Card>

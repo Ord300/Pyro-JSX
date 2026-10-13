@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { Card } from "@/src/components/ui/Card";
 import { Badge } from "@/src/components/ui/Badge";
-import { subscriptionsDB, reservationsDB, paymentsDB, usersDB } from "@/src/services/dbService";
+import { subscriptionsDB, reservationsDB, paymentsDB, usersDB, notificationsDB } from "@/src/services/dbService";
 import { isSubscriptionActive, isSubscriptionExpired } from "@/src/utils/subscriptionStatus";
 import type { Reservation } from "@/src/types/reservation";
 import { CreditCard, Calendar, Wallet, Bell, ArrowRight } from "lucide-react";
@@ -14,35 +14,44 @@ export default function UserDashboard() {
   const [subscriptions, setSubscriptions] = useState<any[]>([]);
   const [reservations, setReservations] = useState<Reservation[]>([]);
   const [payments, setPayments] = useState<any[]>([]);
+  const [unreadCount, setUnreadCount] = useState<number | null>(null);
 
   useEffect(() => {
+    const emailLower = (localStorage.getItem("current_user_email") || "").toLowerCase();
     const load = async () => {
-      const email = localStorage.getItem("current_user_email") || "";
-      if (!email) return;
-      const [users, allSubscriptions, allReservations, allPayments] = await Promise.all([
+      if (!emailLower) return;
+      const [users, allSubscriptions, allReservations, allPayments, allNotifications] = await Promise.all([
         usersDB.getAll<any>(),
         subscriptionsDB.getAll<any>(),
         reservationsDB.getAll<Reservation>(),
         paymentsDB.getAll<any>(),
+        notificationsDB.getAll<any>(),
       ]);
-      setUser(users.find((item) => item.email.toLowerCase() === email) || null);
-      setSubscriptions(allSubscriptions.filter((subscription: any) => subscription.email?.toLowerCase() === email));
-      setReservations(allReservations.filter((reservation: any) => reservation.email?.toLowerCase() === email));
-      setPayments(allPayments.filter((payment: any) => payment.email?.toLowerCase() === email));
+      setUser(users.find((item) => item.email?.toLowerCase() === emailLower) || null);
+      setSubscriptions(allSubscriptions.filter((subscription: any) => subscription.email?.toLowerCase() === emailLower));
+      setReservations(allReservations.filter((reservation: any) => reservation.email?.toLowerCase() === emailLower));
+      setPayments(allPayments.filter((payment: any) => payment.email?.toLowerCase() === emailLower));
+      setUnreadCount(allNotifications.filter((notification: any) => notification.userEmail?.toLowerCase() === emailLower && !notification.read).length);
     };
     load();
+    return notificationsDB.subscribe(load);
   }, []);
 
   const activeSubscription = subscriptions.find((s) => isSubscriptionActive(s));
   const expiredSubscription = !activeSubscription ? [...subscriptions].sort((a, b) => String(b.endDate || "").localeCompare(String(a.endDate || ""))).find((s) => isSubscriptionExpired(s)) : null;
-  const upcomingReservations = reservations.filter((r) => r.status === "Confirmée");
-  const recentPayments = payments.slice(0, 3);
+  const todayStr = new Date().toISOString().slice(0, 10);
+  const upcomingReservations = reservations
+    .filter((r) => r.status === "Confirmée" && String((r as any).date || "").slice(0, 10) >= todayStr)
+    .sort((a, b) => String((a as any).date || "").localeCompare(String((b as any).date || "")));
+  const recentPayments = [...payments]
+    .sort((a, b) => String(b.paidAt || b.createdAt || "").localeCompare(String(a.paidAt || a.createdAt || "")))
+    .slice(0, 3);
 
   const stats = [
     { label: "Abonnement actif", value: activeSubscription ? "Actif" : expiredSubscription ? "Expiré" : "Aucun", icon: CreditCard, color: activeSubscription ? "text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-900/20" : expiredSubscription ? "text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/20" : "text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-900/20" },
     { label: "Réservations à venir", value: upcomingReservations.length, icon: Calendar, color: "text-teal-600 dark:text-teal-400 bg-teal-50 dark:bg-teal-900/20" },
     { label: "Paiements effectués", value: payments.filter((p) => p.status === "Réussi").length, icon: Wallet, color: "text-green-600 dark:text-green-400 bg-green-50 dark:bg-green-900/20" },
-    { label: "Notifications", value: 3, icon: Bell, color: "text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/20" },
+    { label: "Notifications", value: unreadCount === null ? "…" : unreadCount, icon: Bell, color: "text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/20" },
   ];
 
   return (

@@ -2,6 +2,14 @@ import type { Subscription, SubscriptionPlan, SubscriptionRequest } from '../typ
 
 export const mockSubscriptionPlans: SubscriptionPlan[] = [
   {
+    id: 'week',
+    name: 'Formule Semaine',
+    period: 'Semaine',
+    price: 15,
+    currency: 'USD',
+    features: ['Accès 7 jours', 'Toutes les activités', 'Vestiaires inclus', 'Coaching personnalisé'],
+  },
+  {
     id: 'month',
     name: 'Formule Mensuelle',
     period: 'Mois',

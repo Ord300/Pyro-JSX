@@ -30,6 +30,7 @@ export default function UserSubscription() {
   const [renewPhone, setRenewPhone] = useState("");
   const [renewing, setRenewing] = useState(false);
   const [renewSuccess, setRenewSuccess] = useState<{ endDate: string; reference: string } | null>(null);
+  const [renewError, setRenewError] = useState("");
 
   useEffect(() => {
     const load = async () => {
@@ -66,6 +67,7 @@ export default function UserSubscription() {
   const handleWizardComplete = (reference: string) => {
     setLastReference(reference);
     setShowWizard(false);
+    // Le rechargement de la carte se fait automatiquement via subscriptionsDB.subscribe().
   };
 
   const handleWizardCancel = () => {
@@ -98,6 +100,7 @@ export default function UserSubscription() {
   const handleRenew = async () => {
     if (!activeSubscription || !renewPhone.trim()) return;
     setRenewing(true);
+    setRenewError("");
     try {
       const result = await subscriptionFlow.renewSubscription({
         subscription: activeSubscription,
@@ -107,6 +110,8 @@ export default function UserSubscription() {
       setRenewSuccess({ endDate: result.subscription.endDate, reference: result.receipt.reference });
       setShowRenewal(false);
       setRenewPhone("");
+    } catch (e: any) {
+      setRenewError(e?.message || "Renouvellement impossible. Réessayez.");
     } finally {
       setRenewing(false);
     }
@@ -141,7 +146,14 @@ export default function UserSubscription() {
             Gérez votre abonnement et votre carte virtuelle.
           </p>
         </div>
-        <Link href="/verification"><Button><RefreshCw className="mr-2 h-4 w-4" />Vérifier ma demande</Button></Link>
+        <div className="flex flex-wrap gap-2">
+          {!activeSubscription && (
+            <Button onClick={() => setShowWizard(true)}>
+              <CreditCard className="mr-2 h-4 w-4" />Nouvel abonnement
+            </Button>
+          )}
+          <Link href="/verification"><Button variant="outline"><RefreshCw className="mr-2 h-4 w-4" />Vérifier ma demande</Button></Link>
+        </div>
       </div>
 
       {renewSuccess && (
@@ -317,7 +329,12 @@ export default function UserSubscription() {
           <p className="mt-2 text-sm text-slate-500 dark:text-slate-400">
             Souscrivez à un abonnement pour accéder à toutes les installations du centre.
           </p>
-          <Link href="/verification"><Button className="mt-6">Vérifier ma demande</Button></Link>
+          <div className="mt-6 flex flex-col items-center justify-center gap-3 sm:flex-row">
+            <Button onClick={() => setShowWizard(true)}>
+              <CreditCard className="mr-2 h-4 w-4" />Nouvel abonnement
+            </Button>
+            <Link href="/verification"><Button variant="outline">Vérifier ma demande</Button></Link>
+          </div>
         </Card>
       )}
 
@@ -396,8 +413,14 @@ export default function UserSubscription() {
 
             <div>
               <label className="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-300">Numéro Mobile Money</label>
-              <Input value={renewPhone} onChange={(e) => setRenewPhone(e.target.value)} placeholder="08XXXXXXXX" />
+              <Input value={renewPhone} onChange={(e) => { setRenewPhone(e.target.value); setRenewError(""); }} placeholder="+243 XXX XXX XXX" />
             </div>
+
+            {renewError && (
+              <div className="rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700 dark:border-red-800 dark:bg-red-900/20 dark:text-red-300">
+                {renewError}
+              </div>
+            )}
 
             <div className="flex items-center justify-between rounded-xl bg-slate-50 p-4 dark:bg-slate-800/60">
               <span className="inline-flex items-center gap-1.5 text-xs text-slate-500 dark:text-slate-400">

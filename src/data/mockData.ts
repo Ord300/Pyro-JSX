@@ -402,6 +402,15 @@ export const mockGalleryImages: GalleryImage[] = [
 
 export const mockPricingPlans: PricingPlan[] = [
   {
+    id: "week",
+    name: "Formule Semaine",
+    period: "Semaine",
+    price: 15,
+    currency: "USD",
+    popular: false,
+    features: ["Accès 7 jours", "Toutes les activités", "Vestiaires inclus", "Coaching personnalisé"],
+  },
+  {
     id: "month",
     name: "Formule Mensuelle",
     period: "Mois",

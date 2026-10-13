@@ -7,6 +7,7 @@ import { Input } from "@/src/components/ui/Input";
 import { Modal } from "@/src/components/ui/Modal";
 import { Badge } from "@/src/components/ui/Badge";
 import { useGallery, useCreateGalleryImage, useUpdateGalleryImage, useDeleteGalleryImage } from "@/src/hooks/queries/gallery";
+import { confirmAction } from "@/src/components/ui/confirm";
 import type { GalleryImage } from "@/src/types/gallery";
 
 export default function AdminGallery() {
@@ -48,7 +49,7 @@ export default function AdminGallery() {
   };
 
   const handleDelete = async (id: number) => {
-    if (!confirm("Supprimer cette image ?")) return;
+    if (!(await confirmAction({ title: "Supprimer l'image", message: "Supprimer cette image ?", confirmLabel: "Supprimer" }))) return;
     await deleteImage.mutateAsync(id);
   };
 

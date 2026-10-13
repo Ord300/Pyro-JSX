@@ -10,7 +10,8 @@ import { prisma } from "@/src/lib/prisma";
 const PAYMENT_ACTIONS: ImportantAction[] = ["abonnement_valide", "renouvellement", "achat_equipement"];
 
 function adminEmail(): string {
-  return (process.env.ADMIN_EMAIL || process.env.SMTP_USER || "ordidimbi@gmail.com").trim();
+  // Aucune adresse personnelle en dur : sans ADMIN_EMAIL/SMTP_USER configuré, pas de copie admin.
+  return (process.env.ADMIN_EMAIL || process.env.SMTP_USER || "").trim();
 }
 
 export async function POST(request: NextRequest) {
@@ -34,9 +35,11 @@ export async function POST(request: NextRequest) {
     // 1) E-mail de confirmation au payeur
     const payerResult = await sendMail({ to: payerEmail, subject: built.subject, html: built.html, text: built.text });
 
-    // 2) Copie à l'admin (même contenu, objet préfixé)
-    let adminResult = { sent: false, error: "non tenté" } as { sent: boolean; messageId?: string; error?: string };
-    if (admin.toLowerCase() !== payerEmail.toLowerCase()) {
+    // 2) Copie à l'admin (même contenu, objet préfixé) — seulement si configuré.
+    let adminResult = { sent: false, simulated: false, error: "non tenté" } as { sent: boolean; simulated?: boolean; messageId?: string; error?: string };
+    if (!admin.includes("@")) {
+      console.error("[PAYMENT-MAIL] copie admin ignorée : ADMIN_EMAIL/SMTP_USER non configuré.");
+    } else if (admin.toLowerCase() !== payerEmail.toLowerCase()) {
       adminResult = await sendMail({
         to: admin,
         subject: `[Admin] ${built.subject}`,
@@ -45,10 +48,11 @@ export async function POST(request: NextRequest) {
       });
     } else {
       // Le payeur EST l'admin : un seul envoi suffit.
-      adminResult = { sent: true, messageId: payerResult.messageId };
+      adminResult = { sent: payerResult.sent, simulated: payerResult.simulated, messageId: payerResult.messageId };
     }
 
     // 3) Notification in-app pour l'admin (le payeur a déjà la sienne côté client)
+    if (admin.includes("@")) {
     prisma.notification
       .create({
         data: {
@@ -62,6 +66,9 @@ export async function POST(request: NextRequest) {
         },
       })
       .catch(() => {});
+    } else {
+      console.error("[PAYMENT-MAIL] notif admin ignorée : ADMIN_EMAIL/SMTP_USER non configuré.");
+    }
 
     if (!payerResult.sent) console.error("[PAYMENT-MAIL] échec payeur:", payerResult.error);
     if (!adminResult.sent) console.error("[PAYMENT-MAIL] échec admin:", adminResult.error);

@@ -8,6 +8,7 @@ import { Badge } from "@/src/components/ui/Badge";
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/src/components/ui/Table";
 import { Modal } from "@/src/components/ui/Modal";
 import { subscriptionFlow } from "@/src/services/subscriptionFlowService";
+import { confirmAction } from "@/src/components/ui/confirm";
 import { notificationsDB } from "@/src/services/dbService";
 import { sendImportantEmail } from "@/src/services/notifyService";
 
@@ -25,16 +26,19 @@ export default function AdminRequests() {
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("Tous");
   const [selected, setSelected] = useState<Request | null>(null);
+  const [actingId, setActingId] = useState<string | null>(null);
+  const [actionError, setActionError] = useState("");
+
+  const load = async () => {
+    const all = await subscriptionFlow.requests();
+    setRequests(
+      all
+        .filter((request) => request.subject === "Inscription" || (request.subject && request.subject.toLowerCase().includes("abonnement")))
+        .map((request) => ({ id: String(request.id), name: request.name, email: request.email, phone: request.phone, subject: request.subject || "Inscription", date: (request.createdAt || "").slice(0, 10), status: request.status, message: request.description || "" }))
+    );
+  };
 
   useEffect(() => {
-    const load = async () => {
-      const all = await subscriptionFlow.requests();
-      setRequests(
-        all
-          .filter((request) => request.subject === "Inscription" || (request.subject && request.subject.toLowerCase().includes("abonnement")))
-          .map((request) => ({ id: String(request.id), name: request.name, email: request.email, phone: request.phone, subject: request.subject || "Inscription", date: (request.createdAt || "").slice(0, 10), status: request.status, message: request.description || "" }))
-      );
-    };
     load();
   }, []);
 
@@ -44,11 +48,29 @@ export default function AdminRequests() {
   );
 
   const updateStatus = async (id: string, status: ReqStatus) => {
+    if (actingId) return;
+    setActionError("");
     const target = requests.find((r) => r.id === id);
     const previous = target?.status;
-    setRequests((prev) => prev.map((r) => (r.id === id ? { ...r, status } : r)));
-    await subscriptionFlow.setRequestStatus(Number(id), status as any);
+    setActingId(id);
+    try {
+      if (status === "Confirmée") {
+        // Crée pour de vrai : paiement + abonnement + reçu + compte abonné (idempotent).
+        await subscriptionFlow.confirmRequest(Number(id));
+      } else {
+        await subscriptionFlow.setRequestStatus(Number(id), status as any);
+      }
+      setRequests((prev) => prev.map((r) => (r.id === id ? { ...r, status } : r)));
+      setSelected(null);
+    } catch (e: any) {
+      await load();
+      setActionError(e?.message || "Action impossible. Réessayez.");
+      return;
+    } finally {
+      setActingId(null);
+    }
     if (target?.email) {
+      try {
       const cancelled = status === "En attente" && previous === "Confirmée";
       await notificationsDB.create({
         userEmail: target.email.toLowerCase(),
@@ -60,7 +82,7 @@ export default function AdminRequests() {
               : "Confirmation de demande annulée",
         message:
           status === "Confirmée"
-            ? `Bonne nouvelle ${target.name} ! Votre demande a été confirmée. Finalisez votre abonnement depuis la page de vérification ou le module Activités.`
+            ? `Bonne nouvelle ${target.name} ! Votre demande a été confirmée et votre abonnement a été créé. Retrouvez votre carte et votre reçu dans votre espace abonné.`
             : status === "Refusée"
               ? `Bonjour ${target.name}, votre demande a été refusée par l'administration. Contactez-nous via la messagerie pour plus d'informations.`
               : `Bonjour ${target.name}, la confirmation de votre demande a été annulée par l'administration. Votre demande repasse « En attente » et sera réexaminée.`,
@@ -84,12 +106,14 @@ export default function AdminRequests() {
           type: "info",
         }).catch(() => {});
       }
+      } catch {
+        // Notification secondaire : l'action principale a déjà réussi.
+      }
     }
-    setSelected(null);
   };
 
   const cancelConfirmation = async (id: string) => {
-    if (!confirm("Annuler la confirmation de cette demande ? Elle repassera « En attente » et le demandeur sera notifié par e-mail.")) return;
+    if (!(await confirmAction({ title: "Annuler la confirmation", message: "Annuler la confirmation de cette demande ? Elle repassera « En attente » et le demandeur sera notifié.", confirmLabel: "Annuler la confirmation" }))) return;
     await updateStatus(id, "En attente");
   };
 
@@ -109,6 +133,11 @@ export default function AdminRequests() {
       </div>
 
       {/* Compteurs */}
+      {actionError && (
+        <div className="rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700 dark:border-red-800 dark:bg-red-900/20 dark:text-red-300">
+          {actionError}
+        </div>
+      )}
       <div className="grid grid-cols-3 gap-4">
         {(Object.entries(counts) as [string, number][]).map(([status, count]) => (
           <div
@@ -159,12 +188,12 @@ export default function AdminRequests() {
                       <Button size="icon" variant="ghost" className="h-8 w-8" onClick={() => setSelected(req)} title="Voir"><Eye className="h-4 w-4" /></Button>
                       {req.status === "En attente" && (
                         <>
-                          <Button size="icon" variant="ghost" className="h-8 w-8 text-green-600" onClick={() => updateStatus(req.id, "Confirmée")} title="Confirmer"><CheckCircle className="h-4 w-4" /></Button>
-                          <Button size="icon" variant="ghost" className="h-8 w-8 text-red-500" onClick={() => updateStatus(req.id, "Refusée")} title="Refuser"><XCircle className="h-4 w-4" /></Button>
+                          <Button size="icon" variant="ghost" className="h-8 w-8 text-green-600" disabled={actingId === req.id} onClick={() => updateStatus(req.id, "Confirmée")} title="Confirmer (crée l'abonnement)"><CheckCircle className="h-4 w-4" /></Button>
+                          <Button size="icon" variant="ghost" className="h-8 w-8 text-red-500" disabled={actingId === req.id} onClick={() => updateStatus(req.id, "Refusée")} title="Refuser"><XCircle className="h-4 w-4" /></Button>
                         </>
                       )}
                       {req.status === "Confirmée" && (
-                        <Button size="icon" variant="ghost" className="h-8 w-8 text-amber-600" onClick={() => cancelConfirmation(req.id)} title="Annuler la confirmation (repasse en attente)"><Undo2 className="h-4 w-4" /></Button>
+                        <Button size="icon" variant="ghost" className="h-8 w-8 text-amber-600" disabled={actingId === req.id} onClick={() => cancelConfirmation(req.id)} title="Annuler la confirmation (repasse en attente)"><Undo2 className="h-4 w-4" /></Button>
                       )}
                     </div>
                   </TableCell>
@@ -189,10 +218,10 @@ export default function AdminRequests() {
             {selected.message && <p className="text-sm text-slate-600 dark:text-slate-400 mt-2 p-3 bg-slate-50 dark:bg-slate-800 rounded-lg">{selected.message}</p>}
             {selected.status === "En attente" && (
               <div className="flex gap-3 mt-4">
-                <Button variant="secondary" className="flex-1" onClick={() => updateStatus(selected.id, "Confirmée")}>
-                  <CheckCircle className="mr-2 h-4 w-4" />Confirmer
+                <Button variant="secondary" className="flex-1" disabled={actingId === selected.id} onClick={() => updateStatus(selected.id, "Confirmée")}>
+                  <CheckCircle className="mr-2 h-4 w-4" />{actingId === selected.id ? "Traitement…" : "Confirmer"}
                 </Button>
-                <Button variant="danger" className="flex-1" onClick={() => updateStatus(selected.id, "Refusée")}>
+                <Button variant="danger" className="flex-1" disabled={actingId === selected.id} onClick={() => updateStatus(selected.id, "Refusée")}>
                   <XCircle className="mr-2 h-4 w-4" />Refuser
                 </Button>
               </div>

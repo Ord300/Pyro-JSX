@@ -9,9 +9,11 @@ export interface ModalProps {
   title: string;
   children: React.ReactNode;
   className?: string;
+  /** Ferme au clic sur le fond et à la touche Échap (défaut : oui). */
+  dismissible?: boolean;
 }
 
-export function Modal({ isOpen, onClose, title, children, className }: ModalProps) {
+export function Modal({ isOpen, onClose, title, children, className, dismissible = true }: ModalProps) {
   useEffect(() => {
     if (isOpen) {
       document.body.style.overflow = 'hidden';
@@ -23,11 +25,28 @@ export function Modal({ isOpen, onClose, title, children, className }: ModalProp
     };
   }, [isOpen]);
 
+  useEffect(() => {
+    if (!isOpen || !dismissible) return;
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key === "Escape") onClose();
+    };
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
+  }, [isOpen, dismissible, onClose]);
+
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/60 p-4 backdrop-blur-sm transition-opacity">
-      <div 
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/60 p-4 backdrop-blur-sm transition-opacity"
+      onClick={() => {
+        if (dismissible) onClose();
+      }}
+    >
+      <div
+        role="dialog"
+        aria-modal="true"
+        onClick={(e) => e.stopPropagation()}
         className={cn(
           "flex max-h-[calc(100vh-2rem)] w-full max-w-lg flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white text-left align-middle shadow-2xl transition-all dark:border-slate-700 dark:bg-slate-900",
           className

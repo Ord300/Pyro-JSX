@@ -49,6 +49,7 @@ export default function Verification() {
   const [method, setMethod] = useState<"M-Pesa" | "Orange Money">("M-Pesa");
   const [phone, setPhone] = useState("");
   const [receipt, setReceipt] = useState<any>();
+  const [mailSent, setMailSent] = useState(false);
   const [paying, setPaying] = useState(false);
   const [payError, setPayError] = useState("");
   const [copied, setCopied] = useState<"email" | "password" | "member" | null>(null);
@@ -57,11 +58,13 @@ export default function Verification() {
   const [step, setStep] = useState(1);
   const gallerySlides = useGallerySlides();
   const activity = activities.find((item) => item.id === activityId);
-  const plan = mockSubscriptionPlans.find((item) => item.id === planId) ?? mockSubscriptionPlans[0];
-  const amount = activity ? activity[plan.period === "Mois" ? "priceMonth" : "priceYear"] : 0;
+  const plan = mockSubscriptionPlans.find((item) => item.id === planId) ?? mockSubscriptionPlans.find((item) => item.id === "month") ?? mockSubscriptionPlans[0];
+  const priceKey = plan.period === "Mois" ? "priceMonth" : plan.period === "Semaine" ? "priceWeek" : "priceYear";
+  const amount = activity ? Number((activity as any)[priceKey]) || 0 : 0;
   const endDate = useMemo(() => {
     const date = new Date();
     if (plan.period === "Mois") date.setMonth(date.getMonth() + 1);
+    else if (plan.period === "Semaine") date.setDate(date.getDate() + 7);
     else date.setFullYear(date.getFullYear() + 1);
     return date.toISOString().slice(0, 10);
   }, [plan]);
@@ -70,7 +73,11 @@ export default function Verification() {
     const found = await subscriptionFlow.requestByEmail(email);
     setRequest(found);
     if (found?.activityId) setActivityId(Number(found.activityId));
-    if (found?.planId) setPlanId(found.planId === "week" ? "month" : String(found.planId));
+    if (found?.planId) {
+      const wanted = String(found.planId).toLowerCase();
+      const known = mockSubscriptionPlans.some((item) => item.id === wanted);
+      setPlanId(known ? wanted : "month");
+    }
     setStep(2);
   };
   const isPhoneValid = /^(\+243|0)\d{9}$/.test(phone.replace(/\s/g, ""));
@@ -84,6 +91,7 @@ export default function Verification() {
     setPayError("");
     try {
       const result = await subscriptionFlow.completePayment({ request, activity, plan, method, phone });
+      setMailSent(!!result.mailSent);
       if (result.receipt) {
         setReceipt(result.receipt);
       } else {
@@ -230,12 +238,12 @@ export default function Verification() {
               </div>
               <div className="flex items-start gap-2 bg-amber-400/10 px-5 py-3 text-xs leading-relaxed text-amber-200">
                 <ShieldCheck className="mt-0.5 h-4 w-4 shrink-0" />
-                <span>Modifiez ce mot de passe dès votre première connexion. Ces accès vous ont aussi été envoyés par e-mail.</span>
+                <span>Modifiez ce mot de passe dès votre première connexion. {mailSent ? "Ces accès vous ont aussi été envoyés par e-mail." : "Conservez ces accès : l'envoi e-mail n'est pas configuré."}</span>
               </div>
             </div>
 
             <p className="flex items-center justify-center gap-2 text-center text-xs text-slate-400">
-              <MailCheck className="h-4 w-4 text-emerald-500" /> Reçu et identifiants envoyés à {credEmail || "votre adresse e-mail"}
+              <MailCheck className="h-4 w-4 text-emerald-500" /> {mailSent ? `Reçu et identifiants envoyés à ${credEmail || "votre adresse e-mail"}` : "Reçu et identifiants disponibles ici — envoi e-mail non configuré"}
             </p>
 
             <div className="flex flex-col justify-center gap-3 sm:flex-row">

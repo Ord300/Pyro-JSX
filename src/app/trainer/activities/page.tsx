@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { Card } from "@/src/components/ui/Card";
 import { Badge } from "@/src/components/ui/Badge";
 import { loadTrainerContext, type TrainerContext } from "@/src/services/trainerSpace";
+import { getDynamicStatus } from "@/src/utils/subscriptionStatus";
 import { formatAgeRange } from "@/src/data/mockData";
 import { Cake, Clock, Users, Dumbbell } from "lucide-react";
 
@@ -36,7 +37,7 @@ export default function TrainerActivities() {
           {ctx.myActivityNames.map((name) => {
             const info = ctx.myActivities.find((a) => a.name === name);
             const subs = ctx.mySubscriptions.filter((s) => s.activityName === name);
-            const active = subs.filter((s) => s.status === "Validée").length;
+            const active = subs.filter((s) => getDynamicStatus(s) === "Validée").length;
             return (
               <Card key={name} className="overflow-hidden p-0 shadow-sm">
                 <div className="flex h-28 items-center justify-center bg-gradient-to-br from-sky-50 to-cyan-100 text-5xl dark:from-sky-900/20 dark:to-cyan-800/20">
