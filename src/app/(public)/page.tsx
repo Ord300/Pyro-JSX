@@ -6,7 +6,7 @@ import { ArrowRight, Dumbbell, ChevronDown, Sparkles, Users, CalendarCheck, QrCo
 import { Button } from "@/src/components/ui/Button";
 import { Badge } from "@/src/components/ui/Badge";
 import { Card, CardContent } from "@/src/components/ui/Card";
-import { usersDB, placesDB } from "@/src/services/dbService";
+import { usersDB } from "@/src/services/dbService";
 import { useActivities } from "@/src/hooks/queries/activities";
 import { useTrainers } from "@/src/hooks/queries/trainers";
 import { useGallery } from "@/src/hooks/queries/gallery";
@@ -42,15 +42,14 @@ export default function Home() {
   const { data: galleryImages = [] } = useGallery();
   const heroSlides = useGallerySlides();
   const [membersCount, setMembersCount] = useState(0);
-  const [placesCount, setPlacesCount] = useState(0);
+  const galleryCount = galleryImages.filter((img) => img.visible).length;
 
   useScrollReveal();
 
   useEffect(() => {
     const refresh = async () => {
-      const [users, places] = await Promise.all([usersDB.getAll(), placesDB.getAll()]);
+      const users = await usersDB.getAll();
       setMembersCount(users.length);
-      setPlacesCount(places.length);
     };
     refresh();
     const onChange = () => refresh();
@@ -127,7 +126,7 @@ export default function Home() {
           <StatCard index={0} label="Membres actifs" value={membersCount} />
           <StatCard index={1} label="Activités proposées" value={activities.length} />
           <StatCard index={2} label="Entraîneurs experts" value={trainers.length} />
-          <StatCard index={3} label="Espaces sportifs" value={placesCount} />
+          <StatCard index={3} label="Galerie" value={galleryCount} />
         </div>
       </section>
 

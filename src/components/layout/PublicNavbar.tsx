@@ -11,7 +11,7 @@ const navLinks = [
   { name: "Accueil", path: "/" },
   { name: "À propos", path: "/about" },
   { name: "Activités", path: "/activities" },
-  { name: "Lieux", path: "/places" },
+  { name: "Galerie", path: "/gallery" },
   { name: "Vérification", path: "/verification" },
 ];
 

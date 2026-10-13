@@ -8,9 +8,10 @@ import { Card } from "@/src/components/ui/Card";
 import { Dumbbell, Users, Target, Globe, Heart, ShieldCheck, Clock, ChevronRight, Sparkles, Award } from "lucide-react";
 import { useScrollReveal } from "@/src/hooks/useScrollReveal";
 import { useCounter } from "@/src/hooks/useCounter";
-import { usersDB, placesDB } from "@/src/services/dbService";
+import { usersDB } from "@/src/services/dbService";
 import { useActivities } from "@/src/hooks/queries/activities";
 import { useTrainers } from "@/src/hooks/queries/trainers";
+import { useGallery } from "@/src/hooks/queries/gallery";
 
 // --- Composant Stat dynamique avec compteur animé ---
 function StatCard({ label, value, index }: { label: string; value: number; index: number }) {
@@ -28,14 +29,14 @@ export default function About() {
   useScrollReveal();
   const { data: activities = [] } = useActivities();
   const { data: trainers = [] } = useTrainers();
+  const { data: galleryImages = [] } = useGallery();
   const [membersCount, setMembersCount] = useState(0);
-  const [placesCount, setPlacesCount] = useState(0);
+  const galleryCount = galleryImages.filter((img) => img.visible).length;
 
   useEffect(() => {
     const refresh = async () => {
-      const [users, places] = await Promise.all([usersDB.getAll(), placesDB.getAll()]);
+      const users = await usersDB.getAll();
       setMembersCount(users.length);
-      setPlacesCount(places.length);
     };
     refresh();
     const onChange = () => refresh();
@@ -114,7 +115,7 @@ export default function About() {
         <section id="stats" className="mb-20 grid grid-cols-2 lg:grid-cols-4 gap-6">
           <StatCard index={0} value={trainers.length} label="Entraîneurs qualifiés" />
           <StatCard index={1} value={membersCount} label="Membres actifs" />
-          <StatCard index={2} value={placesCount} label="Infrastructures" />
+          <StatCard index={2} value={galleryCount} label="Galerie" />
           <StatCard index={3} value={activities.length} label="Activités proposées" />
         </section>
 
